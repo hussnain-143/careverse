@@ -269,3 +269,4 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
+export const dynamic = "force-dynamic";
