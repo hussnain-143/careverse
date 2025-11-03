@@ -41,29 +41,30 @@ export default function RegisterPage() {
     });
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[rgb(120,195,235)] to-[rgb(180,159,216)]">
-            <div className="flex flex-col  max-w-[1200px] mx-auto min-h-screen">
-                {/* Logo */}
-                
+        <div className="min-h-screen bg-gradient-to-b from-[rgb(120,195,235)] to-[rgb(180,159,216)] px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col max-w-[1200px] mx-auto min-h-screen">
+                {/* Centered Section */}
+                <div className="flex flex-1 flex-col gap-6 sm:gap-10 items-center justify-center">
+                    {/* Logo */}
+                    <div className="p-4 sm:p-6 text-center">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                            <span className="inline-block w-3 h-3 rounded-full bg-[rgb(55,0,231)]"></span>
+                            Careverse
+                        </h2>
+                    </div>
 
-                {/* Form */}
-                <div className="flex flex-1 flex-col gap-10 items-center justify-center">
-                    <div className="p-6">
-                    <h2 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 rounded-full bg-[rgb(55,0,231)]"></span>
-                        Careverse
-                    </h2>
-                </div>
-                    <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-8 w-full max-w-md">
-                        <h1 className="text-2xl font-bold text-center mb-2 text-black">
+                    {/* Form Card */}
+                    <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-sm sm:max-w-md">
+                        <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 text-black">
                             Create an Account
                         </h1>
-                        <p className="text-center text-gray-600 mb-6">
-                            Join <span className="font-semibold text-[rgb(55,0,231)]">Careverse</span> to start
-                            your personalized health journey.
+                        <p className="text-center text-gray-600 mb-6 text-sm sm:text-base">
+                            Join{" "}
+                            <span className="font-semibold text-[rgb(55,0,231)]">Careverse</span>{" "}
+                            to start your personalized health journey.
                         </p>
 
-                        <form action={formAction} className="space-y-4">
+                        <form action={formAction} className="space-y-5 sm:space-y-6">
                             {/* Email */}
                             <div>
                                 <label
@@ -77,7 +78,7 @@ export default function RegisterPage() {
                                     name="email"
                                     type="email"
                                     placeholder="you@example.com"
-                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
+                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 text-sm sm:text-base focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
                                 />
                                 {state.errors?.email && (
                                     <p className="text-red-500 text-sm mt-1">
@@ -99,7 +100,7 @@ export default function RegisterPage() {
                                     name="password"
                                     type="password"
                                     placeholder="••••••••"
-                                    className="w-full rounded-md border text-gray-700 border-gray-300 p-2 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
+                                    className="w-full rounded-md border text-gray-700 border-gray-300 p-2 sm:p-3 text-sm sm:text-base focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
                                     Must be at least 8 characters long.
@@ -124,7 +125,7 @@ export default function RegisterPage() {
                                     name="confirm"
                                     type="password"
                                     placeholder="••••••••"
-                                    className="w-full rounded-md border text-gray-700 border-gray-300 p-2 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
+                                    className="w-full rounded-md border text-gray-700 border-gray-300 p-2 sm:p-3 text-sm sm:text-base focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
                                 />
                                 {state.errors?.confirm && (
                                     <p className="text-red-500 text-sm mt-1">
@@ -136,7 +137,7 @@ export default function RegisterPage() {
                             {/* Submit */}
                             <button
                                 type="submit"
-                                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 rounded-md transition-all duration-200"
+                                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base"
                             >
                                 Register
                             </button>
@@ -144,11 +145,12 @@ export default function RegisterPage() {
 
                         {/* Success Message */}
                         {state.success && (
-                            <p className="text-green-600 text-center mt-4 font-medium">
+                            <p className="text-green-600 text-center mt-4 font-medium text-sm sm:text-base">
                                 {state.message}
                             </p>
                         )}
 
+                        {/* Footer */}
                         <p className="text-center text-sm text-gray-600 mt-6">
                             Already have an account?{" "}
                             <a

@@ -30,25 +30,25 @@ export default function LoginPage() {
     });
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[rgb(120,195,235)] to-[rgb(180,159,216)]">
+        <div className="min-h-screen bg-gradient-to-b from-[rgb(120,195,235)] to-[rgb(180,159,216)] px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col max-w-[1200px] mx-auto min-h-screen">
-               
-
                 {/* Centered Form Card */}
-                <div className="flex flex-1 flex-col gap-10 items-center justify-center">
-                     {/* Logo + Title */}
-                <div className="p-6">
-                    <h2 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-                        <span className="inline-block w-3 h-3 rounded-full bg-[rgb(55,0,231)]"></span>
-                        Careverse
-                    </h2>
-                </div>
-                    <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-8 w-full max-w-md">
-                        <h1 className="text-2xl font-bold text-center mb-2 text-black">
+                <div className="flex flex-1 flex-col gap-6 sm:gap-10 items-center justify-center">
+                    {/* Logo + Title */}
+                    <div className="p-4 sm:p-6 text-center">
+                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                            <span className="inline-block w-3 h-3 rounded-full bg-[rgb(55,0,231)]"></span>
+                            Careverse
+                        </h2>
+                    </div>
+
+                    <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-sm sm:max-w-md">
+                        <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 text-black">
                             Welcome Back
                         </h1>
-                        <p className="text-center text-gray-700 mb-6">
-                            Please login to your <span className="font-semibold text-[rgb(55,0,231)]">Careverse</span> account.
+                        <p className="text-center text-gray-700 mb-6 text-sm sm:text-base">
+                            Please login to your{" "}
+                            <span className="font-semibold text-[rgb(55,0,231)]">Careverse</span> account.
                         </p>
 
                         <form action={formAction} className="space-y-5">
@@ -65,7 +65,7 @@ export default function LoginPage() {
                                     name="email"
                                     type="email"
                                     placeholder="you@example.com"
-                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
+                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
                                 />
                                 {state.errors?.email && (
                                     <p className="text-red-500 text-sm mt-1">
@@ -87,7 +87,7 @@ export default function LoginPage() {
                                     name="password"
                                     type="password"
                                     placeholder="••••••••"
-                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none"
+                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
                                 />
                                 {state.errors?.password && (
                                     <p className="text-red-500 text-sm mt-1">
@@ -97,7 +97,7 @@ export default function LoginPage() {
                             </div>
 
                             {/* Remember + Forgot */}
-                            <div className="flex items-center justify-between text-sm">
+                            <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-0 text-sm">
                                 <label className="flex items-center gap-2 text-gray-600">
                                     <input
                                         type="checkbox"
@@ -117,8 +117,7 @@ export default function LoginPage() {
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                
-                                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 rounded-md transition-all duration-200"
+                                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base"
                             >
                                 Login
                             </button>
