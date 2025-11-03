@@ -1,9 +1,9 @@
 import React from "react";
 
-const Homefooter = () => {
+const HomeFooter = () => {
   return (
-    <footer className="text-center py-6 text-sm text-gray-800 bg-transparent">
-      <div className="flex justify-center gap-6 mb-2">
+    <footer className="text-center py-4 text-sm text-gray-800 bg-transparent">
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 mb-3">
         <a href="#" className="hover:text-[rgb(55,0,231)] transition">
           Terms of Service
         </a>
@@ -22,4 +22,4 @@ const Homefooter = () => {
   );
 };
 
-export default Homefooter;
+export default HomeFooter;

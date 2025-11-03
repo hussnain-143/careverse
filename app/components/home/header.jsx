@@ -1,33 +1,81 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
+import { Menu, X } from "lucide-react";
 
-const HomeHeader = () =>  {
-    return(
-        <>
-            <header className="flex justify-between items-center px-6 sm:px-12 py-6">
-                <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-[rgb(55,0,231)] rounded-full shadow-sm"></div>
-                    <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                        Careverse
-                    </h1>
-                </div>
+const HomeHeader = () => {
+  const [isOpen, setIsOpen] = useState(false);
 
-                <nav className="flex items-center space-x-6">
-                    <a href="#how-it-works" className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition">
-                        How It Works
-                    </a>
-                    <a href="#about" className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition">
-                        About Us
-                    </a>
-                    <a
-                        href="/login"
-                        className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
-                    >
-                        Login
-                    </a>
-                </nav>
-            </header>
-        </>
-    )
-}
+  return (
+    <>
+      <header className="flex justify-between items-center px-6 sm:px-12 py-6 relative">
+        {/* Logo */}
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 bg-[rgb(55,0,231)] rounded-full shadow-sm"></div>
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+            Careverse
+          </h1>
+        </div>
+
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center space-x-6">
+          <a
+            href="#how-it-works"
+            className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
+          >
+            How It Works
+          </a>
+          <a
+            href="#about"
+            className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
+          >
+            About Us
+          </a>
+          <a
+            href="/login"
+            className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
+          >
+            Login
+          </a>
+        </nav>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden text-gray-800 focus:outline-none"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle Menu"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+        {/* Mobile Menu Drawer */}
+        {isOpen && (
+          <div className="absolute top-full left-0 w-full bg-white shadow-md rounded-b-2xl flex flex-col items-center py-6 space-y-4 md:hidden z-50">
+            <a
+              href="#how-it-works"
+              onClick={() => setIsOpen(false)}
+              className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
+            >
+              How It Works
+            </a>
+            <a
+              href="#about"
+              onClick={() => setIsOpen(false)}
+              className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
+            >
+              About Us
+            </a>
+            <a
+              href="/login"
+              onClick={() => setIsOpen(false)}
+              className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
+            >
+              Login
+            </a>
+          </div>
+        )}
+      </header>
+    </>
+  );
+};
 
 export default HomeHeader;
