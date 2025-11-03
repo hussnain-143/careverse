@@ -1,148 +1,192 @@
 "use client";
 import React, { useActionState } from "react";
+import { useRouter } from "next/navigation";
 
-// ✅ Validation for login form
-function validateLogin(prevState, formData) {
-    const email = formData.get("email")?.trim();
-    const password = formData.get("password")?.trim();
-    const errors = {};
+async function loginAction(prevState, formData) {
+  const email = formData.get("email")?.trim();
+  const password = formData.get("password")?.trim();
+  const rememberMe = formData.get("remember") === "on";
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errors.email = "Please enter a valid email address.";
+  const errors = {};
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = "Please enter a valid email address.";
+  }
+
+  if (!password) {
+    errors.password = "Password is required.";
+  }
+
+  if (Object.keys(errors).length > 0) return { success: false, errors };
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      let formatted = {};
+
+      // backend validation array errors
+      if (Array.isArray(data.errors)) {
+        data.errors.forEach((e) => {
+          formatted[e.field] = e.message;
+        });
+      }
+
+      // backend main message
+      if (data.message) {
+        formatted.api = data.message;
+      }
+
+      return { success: false, errors: formatted };
     }
 
-    if (!password) {
-        errors.password = "Password is required.";
+ const { token } = data.data;
+
+    // token store
+    if (token) {
+        localStorage.removeItem("authToken");
+        sessionStorage.removeItem("authToken");
+
+        if (rememberMe) {
+        localStorage.setItem("authToken", data.token);
+        } else {
+        sessionStorage.setItem("authToken", data.token);
+        }
     }
 
-    if (Object.keys(errors).length > 0) {
-        return { success: false, errors };
-    }
-
-    return { success: true, message: "Login successful!" };
+    return { success: true, message: "Login successful!", errors: {} };
+  } catch (e) {
+    return { success: false, errors: { api: "Network error" } };
+  }
 }
 
 export default function LoginPage() {
-    const [state, formAction] = useActionState(validateLogin, {
-        success: null,
-        errors: {},
-        message: "",
-    });
+  const router = useRouter();
 
-    return (
-        <div className="min-h-screen bg-gradient-to-b from-[rgb(120,195,235)] to-[rgb(180,159,216)] px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col max-w-[1200px] mx-auto min-h-screen">
-                {/* Centered Form Card */}
-                <div className="flex flex-1 flex-col gap-6 sm:gap-10 items-center justify-center">
-                    {/* Logo + Title */}
-                    <div className="p-4 sm:p-6 text-center">
-                        <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 flex items-center justify-center gap-2">
-                            <span className="inline-block w-3 h-3 rounded-full bg-[rgb(55,0,231)]"></span>
-                            Careverse
-                        </h2>
-                    </div>
+  const [state, formAction] = useActionState(loginAction, {
+    success: null,
+    errors: {},
+    message: "",
+  });
 
-                    <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-sm sm:max-w-md">
-                        <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 text-black">
-                            Welcome Back
-                        </h1>
-                        <p className="text-center text-gray-700 mb-6 text-sm sm:text-base">
-                            Please login to your{" "}
-                            <span className="font-semibold text-[rgb(55,0,231)]">Careverse</span> account.
-                        </p>
+  if (state.success) {
+    setTimeout(() => router.push("/"), 1200);
+  }
 
-                        <form action={formAction} className="space-y-5">
-                            {/* Email */}
-                            <div>
-                                <label
-                                    htmlFor="email"
-                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                >
-                                    Email
-                                </label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    placeholder="you@example.com"
-                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
-                                />
-                                {state.errors?.email && (
-                                    <p className="text-red-500 text-sm mt-1">
-                                        {state.errors.email}
-                                    </p>
-                                )}
-                            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[rgb(120,195,235)] to-[rgb(180,159,216)] px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col max-w-[1200px] mx-auto min-h-screen">
+        <div className="flex flex-1 flex-col gap-6 sm:gap-10 items-center justify-center">
+          <div className="p-4 sm:p-6 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 flex items-center justify-center gap-2">
+              <span className="inline-block w-3 h-3 rounded-full bg-[rgb(55,0,231)]"></span>
+              Careverse
+            </h2>
+          </div>
 
-                            {/* Password */}
-                            <div>
-                                <label
-                                    htmlFor="password"
-                                    className="block text-sm font-medium text-gray-700 mb-1"
-                                >
-                                    Password
-                                </label>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
-                                />
-                                {state.errors?.password && (
-                                    <p className="text-red-500 text-sm mt-1">
-                                        {state.errors.password}
-                                    </p>
-                                )}
-                            </div>
+          <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-sm sm:max-w-md">
+            <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 text-black">
+              Welcome Back
+            </h1>
+            <p className="text-center text-gray-700 mb-6 text-sm sm:text-base">
+              Login to your{" "}
+              <span className="font-semibold text-[rgb(55,0,231)]">Careverse</span>{" "}
+              account.
+            </p>
 
-                            {/* Remember + Forgot */}
-                            <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-0 text-sm">
-                                <label className="flex items-center gap-2 text-gray-600">
-                                    <input
-                                        type="checkbox"
-                                        name="remember"
-                                        className="accent-[rgb(55,0,231)]"
-                                    />
-                                    Remember me
-                                </label>
-                                <a
-                                    href="#"
-                                    className="text-[rgb(55,0,231)] hover:underline font-medium"
-                                >
-                                    Forgot Password?
-                                </a>
-                            </div>
+            <form action={formAction} className="space-y-5">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
+                />
+                {state.errors?.email && (
+                  <p className="text-red-500 text-sm mt-1">{state.errors.email}</p>
+                )}
+              </div>
 
-                            {/* Submit Button */}
-                            <button
-                                type="submit"
-                                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base"
-                            >
-                                Login
-                            </button>
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
+                />
+                {state.errors?.password && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {state.errors.password}
+                  </p>
+                )}
+              </div>
 
-                            {/* Success Message */}
-                            {state.success && (
-                                <p className="text-green-600 text-center mt-3 font-medium">
-                                    {state.message}
-                                </p>
-                            )}
-                        </form>
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-0 text-sm">
+                <label className="flex items-center gap-2 text-gray-600">
+                  <input
+                    type="checkbox"
+                    name="remember"
+                    className="accent-[rgb(55,0,231)]"
+                  />
+                  Remember me
+                </label>
+                <a className="text-[rgb(55,0,231)] hover:underline font-medium">
+                  Forgot Password?
+                </a>
+              </div>
 
-                        {/* Footer */}
-                        <p className="text-center text-sm text-gray-700 mt-6">
-                            Don’t have an account?{" "}
-                            <a
-                                href="/register"
-                                className="text-[rgb(55,0,231)] hover:underline font-medium"
-                            >
-                                Register here
-                            </a>
-                        </p>
-                    </div>
-                </div>
-            </div>
+              {/* submit */}
+              <button
+                type="submit"
+                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base"
+              >
+                Login
+              </button>
+
+              {/* API top error */}
+              {state.errors?.api && (
+                <p className="text-red-500 text-sm text-center mt-2">
+                  {state.errors.api}
+                </p>
+              )}
+
+              {/* success */}
+              {state.success && (
+                <p className="text-green-600 text-center mt-3 font-medium">
+                  {state.message}
+                </p>
+              )}
+            </form>
+
+            <p className="text-center text-sm text-gray-700 mt-6">
+              Don’t have an account?{" "}
+              <a
+                href="/register"
+                className="text-[rgb(55,0,231)] hover:underline font-medium"
+              >
+                Register here
+              </a>
+            </p>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }
