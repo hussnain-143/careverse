@@ -7,28 +7,60 @@ const HomeMain = () => {
   const [query, setQuery] = useState("");
   const router = useRouter();
 
-  const handleGetStarted = () => {
-    if (query.trim() !== "") {
-      router.push(`/chat?message=${encodeURIComponent(query)}`);
-    } else {
-      router.push(`/chat`);
+  const handleGetStarted = async () => {
+    if (query.trim() === "") return router.push("/");
+
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/start`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ message: query }),
+        }
+      );
+
+      const data = await res.json();
+
+      // conversation id from backend
+      const conversationId = data?.data?.conversation?.id;
+
+      if (conversationId) {
+        sessionStorage.setItem("conversationId", conversationId);
+      }
+
+      router.push("/chat");
+    } catch (err) {
+      console.log("network error");
     }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSend();
   };
 
   return (
     <main className="flex flex-col items-center text-center px-6 py-10 sm:py-20">
       <h2 className="text-xl sm:text-6xl font-extrabold max-w-full leading-tight mb-6 text-gray-900">
-        Every kind of care made simple and accessible for all people,
-        anywhere in the world.
+        Every kind of care made simple and accessible for all people, anywhere
+        in the world.
       </h2>
 
       <p className="text-gray-800 max-w-2xl mb-8 text-base sm:text-lg">
-        Ask me anything about your symptoms, finding care, or exploring
-        health options.
+        Ask me anything about your symptoms, finding care, or exploring health
+        options.
       </p>
 
       <div className="bg-[rgb(55,0,231)]/10 text-[rgb(55,0,231)] px-4 py-1.5 rounded-full text-sm font-medium mb-8 shadow-sm items-center gap-2 inline-flex">
-        <Sparkles className="w-5 h-5 text-[rgb(55,0,231)] animate-pulse" /> Powered by GPT
+        <Sparkles className="w-5 h-5 text-[rgb(55,0,231)] animate-pulse" />{" "}
+        Powered by GPT
       </div>
 
       {/* Search Bar */}
@@ -37,11 +69,13 @@ const HomeMain = () => {
           type="text"
           placeholder="Tell me what’s wrong or what you’re looking for..."
           value={query}
+          onKeyDown={handleKeyDown}
           onChange={(e) => setQuery(e.target.value)}
           className="flex-1 px-2 w-10 md:w-full md:px-5 py-3 text-gray-800 focus:outline-none"
         />
         <button
           onClick={handleGetStarted}
+
           className="bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium  md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition"
         >
           Get Started

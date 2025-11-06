@@ -57,9 +57,9 @@ async function loginAction(prevState, formData) {
         sessionStorage.removeItem("authToken");
 
         if (rememberMe) {
-        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("authToken", token);
         } else {
-        sessionStorage.setItem("authToken", data.token);
+        sessionStorage.setItem("authToken", token);
         }
     }
 

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 
 const HomeHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,24 +19,24 @@ const HomeHeader = () => {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center space-x-6">
-          <a
+          <Link
             href="#how-it-works"
             className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
           >
             How It Works
-          </a>
-          <a
+          </Link>
+          <Link
             href="#about"
             className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
           >
             About Us
-          </a>
-          <a
+          </Link>
+          <Link
             href="/login"
             className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
           >
             Login
-          </a>
+          </Link>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -50,27 +51,27 @@ const HomeHeader = () => {
         {/* Mobile Menu Drawer */}
         {isOpen && (
           <div className="absolute top-full left-0 w-full bg-white shadow-md rounded-b-2xl flex flex-col items-center py-6 space-y-4 md:hidden z-50">
-            <a
+            <Link
               href="#how-it-works"
               onClick={() => setIsOpen(false)}
               className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
             >
               How It Works
-            </a>
-            <a
+            </Link>
+            <Link
               href="#about"
               onClick={() => setIsOpen(false)}
               className="text-gray-800 hover:text-[rgb(55,0,231)] font-medium transition"
             >
               About Us
-            </a>
-            <a
+            </Link>
+            <Link
               href="/login"
               onClick={() => setIsOpen(false)}
               className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
             >
               Login
-            </a>
+            </Link>
           </div>
         )}
       </header>
