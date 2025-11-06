@@ -11,6 +11,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import Link from "next/link";
 
 /* ────────────────────── Responsive Header ────────────────────── */
 const Header = () => {
@@ -28,15 +29,15 @@ const Header = () => {
         <div className="flex items-center gap-8">
                     {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
-          <a href="/" className="text-gray-500 hover:text-[rgb(61,40,223)] transition">
+          <Link href="/" className="text-gray-500 hover:text-[rgb(61,40,223)] transition">
             Home
-          </a>
-          <a
+          </Link>
+          <Link
             href="/"
             className="font-medium text-gray-900 border-b-2 border-[rgb(61,40,223)] pb-0.5"
           >
             My Assessments
-          </a>
+          </Link>
         </nav>
 
         {/* Desktop Profile */}
