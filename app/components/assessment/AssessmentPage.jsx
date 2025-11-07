@@ -1,18 +1,77 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  MapPin,Star,Stethoscope,Brain,Menu,
-  RefreshCcw,User,AlertTriangle,Info,
-  X,AlertCircle, CheckCircle, Package
+  MapPin,
+  Star,
+  Stethoscope,
+  Brain,
+  Menu,
+  RefreshCcw,
+  User,
+  AlertTriangle,
+  Info,
+  X,
+  AlertCircle,
+  CheckCircle,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 
-/* ────────────────────── Responsive Header ────────────────────── */
+/* ────────────────────── Responsive Header (with dropdown) ────────────────────── */
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [assessments, setAssessments] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // -------------------------------------------------
+  // 1. Load assessments (once, when component mounts)
+  // -------------------------------------------------
+  useEffect(() => {
+    const loadAssessments = async () => {
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
+        );
+        const listData = await res.json();
+        console.log(listData);
+
+        // <-- your line
+        const { assessments } = listData.data;
+        setAssessments(assessments ?? []);
+      } catch (err) {
+        console.error("loadAssessments error:", err);
+      }
+    };
+
+    loadAssessments();
+  }, []);
+
+  // -------------------------------------------------
+  // 2. Close dropdown when clicking outside
+  // -------------------------------------------------
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="fixed inset-x-0 top-0 bg-white border-b border-gray-100 shadow-sm z-50">
@@ -32,12 +91,60 @@ const Header = () => {
             >
               Home
             </Link>
-            <Link
-              href="/"
-              className="font-medium text-gray-900 border-b-2 border-[rgb(61,40,223)] pb-0.5"
-            >
-              My Assessments
-            </Link>
+
+            {/* ----- DROPDOWN BUTTON ----- */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="text-gray-500 hover:text-[rgb(61,40,223)] transition flex items-center gap-1"
+              >
+                My Assessments
+                <svg
+                  className={`w-4 h-4 transition-transform ${
+                    dropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* ----- DROPDOWN LIST ----- */}
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50">
+                  {assessments.length === 0 ? (
+                    <p className="px-4 py-3 text-sm text-gray-500">
+                      No assessments yet.
+                    </p>
+                  ) : (
+                    <ul className="max-h-80 overflow-y-auto">
+                      {assessments.map((a) => {
+                        const title = a.possibleCondition;
+
+                        return (
+                          <li key={a.id}>
+                            <Link
+                              href={`/assessment/${a.id}`}
+                              onClick={() => setDropdownOpen(false)}
+                              className="block px-4 py-3 text-sm text-gray-700 hover:bg-[rgb(246,244,255)] transition"
+                            >
+                              {title}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Desktop Profile */}
@@ -57,19 +164,74 @@ const Header = () => {
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu – now with Assessments dropdown */}
       {isOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white">
           <div className="px-4 py-3 space-y-3">
-            <a
+            <Link
               href="/"
               className="block text-gray-500 hover:text-[rgb(61,40,223)] transition text-sm"
             >
               Home
-            </a>
-            <a href="/" className="block font-medium text-gray-900 text-sm">
-              My Assessments
-            </a>
+            </Link>
+
+            {/* Mobile Assessments Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="w-full text-left text-gray-500 hover:text-[rgb(61,40,223)] transition text-sm flex items-center justify-between"
+              >
+                My Assessments
+                <svg
+                  className={`w-4 h-4 transition-transform ${
+                    dropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* Dropdown List */}
+              {dropdownOpen && (
+                <div className="mt-2 bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
+                  {assessments.length === 0 ? (
+                    <p className="px-4 py-2 text-xs text-gray-500">
+                      No assessments yet.
+                    </p>
+                  ) : (
+                    <ul className="max-h-60 overflow-y-auto">
+                      {assessments.map((a) => {
+                        const title = a.possibleCondition
+                        return (
+                          <li key={a.id}>
+                            <Link
+                              href={`/assessment/${a.id}`}
+                              onClick={() => {
+                                setDropdownOpen(false);
+                                setIsOpen(false); // close mobile menu too
+                              }}
+                              className="block px-4 py-2 text-xs text-gray-700 hover:bg-[rgb(246,244,255)] transition"
+                            >
+                              {title}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Profile */}
             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
               <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
                 <User className="w-5 h-5 text-white/90" />
@@ -109,35 +271,6 @@ export default function AssessmentResults() {
     }
   }, [data]);
 
-  // Initial Load:
-  // useEffect(() => {
-  //   const loadAssessment = async () => {
-  //     const conversationId = sessionStorage.getItem("conversationId");
-  //     const token =
-  //       localStorage.getItem("authToken") ||
-  //       sessionStorage.getItem("authToken");
-
-  //     try {
-  //       // fetch assessment
-  //       const resList = await fetch(
-  //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //             "ngrok-skip-browser-warning": "true",
-  //           },
-  //         }
-  //       );
-  //       const listData = await resList.json();
-
-  //     } catch (err) {
-  //       console.error("loadAssessment error:", err);
-  //     }
-  //   };
-
-  //   loadAssessment();
-  // }, []);
-
   if (!data) return null; // or a loader
 
   // extract data
@@ -163,32 +296,6 @@ export default function AssessmentResults() {
     info: <Info className="w-6 h-6 text-[rgb(61,40,223)]" />,
   };
 
-  // const loadAssess = async () => {
-  //   const token =
-  //       localStorage.getItem("authToken") ||
-  //       sessionStorage.getItem("authToken");
-
-  //       try {
-  //       // fetch assessment
-  //       const resList = await fetch(
-  //         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments/${assessmentId}`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //             "ngrok-skip-browser-warning": "true",
-  //           },
-  //         }
-  //       );
-  //       const listData = await resList.json();
-  //       console.log("Assessement. by Id" , listData);
-
-  //     } catch (err) {
-  //       console.error("loadAssessment error:", err);
-  //     }
-
-    
-  // }
-
   // severity color mapping
   const severityColor = {
     emergency: "bg-red-100 text-red-700",
@@ -196,6 +303,14 @@ export default function AssessmentResults() {
     medium: "bg-yellow-100 text-yellow-700",
     low: "bg-green-100 text-green-700",
   };
+
+  const getInitials = (name) =>
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
   return (
     <div className="flex flex-col min-h-screen pt-16 text-black">
@@ -400,7 +515,7 @@ export default function AssessmentResults() {
           {activeTab === "Providers" && (
             <section className="max-w-6xl mx-auto mb-12 sm:mb-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200">
+                <div className="rounded-2xl overflow-hidden shadow-xl border lg:h-150 border-gray-200">
                   <img
                     src="https://placehold.co/600x400/DDEEFF/3040A0/png?text=San+Francisco+Map"
                     alt="Map"
@@ -410,27 +525,35 @@ export default function AssessmentResults() {
                 <div className="flex flex-col gap-4">
                   {providers.map((doc) => (
                     <div
-                      key={doc.name}
+                      key={doc.placeId || doc.name}
                       className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:shadow-xl transition-shadow duration-300"
                     >
                       <div className="flex items-center gap-4 w-full sm:w-auto">
-                        <ProviderAvatar initials={doc.initials} />
+                        <ProviderAvatar
+                          initials={doc.initials || getInitials(doc.name)}
+                        />
                         <div className="flex-1">
                           <h4 className="font-semibold text-gray-800">
                             {doc.name}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            {doc.role} · {doc.distance}
+                            {doc.specialty} · {doc.distance}
                           </p>
                           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                             <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                            {doc.rating} ({doc.reviews} reviews)
+                            {doc.rating} ({doc.reviewCount} reviews)
                           </p>
+                          <p>{doc.rating}</p>
                         </div>
                       </div>
-                      <button className="w-full sm:w-auto bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors">
+                      <Link
+                        href={doc.bookingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
+                      >
                         Book Appointment
-                      </button>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -448,19 +571,70 @@ export default function AssessmentResults() {
                       key={i}
                       className="group bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-xl hover:border-[rgb(61,40,223)] transition-all duration-300 cursor-pointer"
                     >
+                      {/* Icon */}
                       <div className="bg-gradient-to-br from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-xl w-12 h-12 flex items-center justify-center mb-4 text-white">
                         <Package className="w-6 h-6" />
                       </div>
-                      <h4 className="font-semibold text-gray-800 text-lg">
-                        {p.title}
+
+                      {/* Product Name & Type */}
+                      <h4 className="font-bold text-xl text-gray-900">
+                        {p.name}
                       </h4>
-                      <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                      <p className="text-sm font-medium text-[rgb(61,40,223)] mt-1">
+                        {p.type}
+                      </p>
+
+                      {/* Description */}
+                      <p className="text-sm text-gray-600 mt-3 leading-relaxed">
                         {p.description}
                       </p>
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <span className="text-xs font-medium text-[rgb(61,40,223)] group-hover:underline">
-                          Learn more →
-                        </span>
+
+                      {/* Prescription / Consultation Tags */}
+                      <div className="flex gap-2 mt-3">
+                        {p.isPrescription ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Prescription Required
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Over the Counter
+                          </span>
+                        )}
+                        {p.requiresConsultation && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            Consultation Suggested
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Disclaimer (small text) */}
+                      <p className="text-xs text-gray-500 mt-4 italic">
+                        {p.disclaimer}
+                      </p>
+
+                      {/* CTA Link */}
+                      <div className="mt-5 pt-4 border-t border-gray-100">
+                        <Link
+                          href={p.purchaseUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm font-medium text-[rgb(61,40,223)] group-hover:underline"
+                        >
+                          Buy
+                          <svg
+                            className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -487,9 +661,12 @@ export default function AssessmentResults() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <button className="w-full sm:w-auto border px-5 py-2.5 rounded-full font-semibold transition text-sm bg-white border-[rgb(61,40,223)] text-[rgb(61,40,223)] hover:bg-[rgb(61,40,223)/.05]">
+            <Link
+              href="/chat"
+              className="w-full sm:w-auto border px-5 py-2.5 rounded-full font-semibold transition text-sm bg-white border-[rgb(61,40,223)] text-[rgb(61,40,223)] hover:bg-[rgb(61,40,223)/.05]"
+            >
               Refine Your Results
-            </button>
+            </Link>
 
             <Link
               className="w-full sm:w-auto text-white px-5 py-2.5 rounded-full font-semibold transition flex items-center justify-center gap-2 text-sm bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)]"
