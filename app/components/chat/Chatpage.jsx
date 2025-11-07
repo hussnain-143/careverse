@@ -1,9 +1,10 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import { Send, Mic, Menu, Globe, Moon, User, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { setApiData } from "../../src/store/dataSlice";
 
 /**
  * ChatPage
@@ -21,10 +22,12 @@ const ChatPage = () => {
   const [CurrentMsg, setCurrentMsg] = useState([]); // array of message objects
   const [topic, setTopic] = useState("");
   const [input, setInput] = useState("");
+  const [popup, setPopup] = useState("");
 
   const router = useRouter();
 
   const chatScrollRef = useRef(null);
+   const dispatch = useDispatch();
 
 
   // ========== HELPERS / HANDLERS ==========
@@ -127,6 +130,40 @@ const ChatPage = () => {
     }
   };
 
+  // generate the assessment from conversation
+  const generate_assessment = async () =>{
+        const conversationId = sessionStorage.getItem("conversationId");
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ conversationId: conversationId }),
+        }
+      );
+
+      const resp = await res.json();
+      if (!resp.success) {
+        setPopup(resp.message);
+        
+      }
+
+      console.log(resp)
+      dispatch(setApiData(resp)); 
+      router.push('/assessment-results')
+    } catch (err) {
+      console.error("network error:", err);
+      
+    }
+
+  }
+
   // ========== EFFECTS ==========
 
   // initial load: conversations list, and messages for active conversationId (if present)
@@ -210,6 +247,13 @@ const ChatPage = () => {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (popup) {
+      const t = setTimeout(() => setPopup(""), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [popup]);
 
   // ========== SUB-COMPONENTS ==========
 
@@ -383,12 +427,12 @@ const ChatPage = () => {
                 Home
               </Link>
               <span className="text-gray-300">|</span>
-              <Link
-                href="/assessment-results"
-                className="text-gray-700 text-sm font-medium hover:text-[rgb(61,40,223)]"
+              <button
+                onClick={generate_assessment}
+                className="text-[rgb(61,40,223)] cursor-pointer px-4 py-2 rounded-4xl border border-[rgb(61,40,223)] text-sm font-medium hover:text-white hover:bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]"
               >
-                Assessment
-              </Link>
+                Generate Assessment
+              </button>
               <span className="text-gray-300">|</span>
             </div>
             <Globe className="w-5 h-5 text-gray-600 cursor-pointer hover:text-[rgb(61,40,223)]" />
@@ -447,6 +491,18 @@ const ChatPage = () => {
           </div>
         </div>
       </div>
+      {popup && (
+  <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-[999]">
+    <span>{popup}</span>
+    <button
+      onClick={() => setPopup("")}
+      className="font-bold ml-2"
+    >
+      ×
+    </button>
+  </div>
+)}
+
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata = {
   title: "Careverse",
@@ -9,7 +10,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="" cz-shortcut-listen="true">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
