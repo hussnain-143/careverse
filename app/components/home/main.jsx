@@ -7,12 +7,18 @@ const HomeMain = () => {
   const [query, setQuery] = useState("");
   const router = useRouter();
 
-  const handleGetStarted = async () => {
-    if (query.trim() === "") return router.push("/");
+  // -----------------------------
+  // Function: Start Chat
+  // Accepts an optional 'clickQuery' to use immediately when called from a suggestion click.
+  // -----------------------------
+  const handleGetStarted = async (clickQuery = null) => {
+    // Use the passed query if available, otherwise use the state query (for button/Enter press)
+    const messageToSend = clickQuery || query.trim(); 
+    
+    if (messageToSend === "") return router.push("/");
 
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-
 
     try {
       const res = await fetch(
@@ -23,27 +29,36 @@ const HomeMain = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ message: query }),
+          body: JSON.stringify({ message: messageToSend }), // Use the determined message
         }
       );
 
       const data = await res.json();
 
-      // conversation id from backend
+      // Save conversation id
       const conversationId = data?.data?.conversation?.id;
-
-      if (conversationId) {
-        sessionStorage.setItem("conversationId", conversationId);
-      }
+      if (conversationId) sessionStorage.setItem("conversationId", conversationId);
 
       router.push("/chat");
     } catch (err) {
-      console.log("network error");
+      console.log("network error", err);
     }
   };
 
+  // -----------------------------
+  // Function: handle Enter key
+  // -----------------------------
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") handleSend();
+    if (e.key === "Enter") handleGetStarted();
+  };
+
+  // -----------------------------
+  // Function: handle suggestion click
+  // Fix: Set state for UI, then immediately call handleGetStarted with the item value.
+  // -----------------------------
+  const handleQueryClick = (item) => {
+    setQuery(item);          // Set query state (UI updates asynchronously)
+    handleGetStarted(item);  // Immediately pass the item to start the chat
   };
 
   return (
@@ -74,9 +89,8 @@ const HomeMain = () => {
           className="flex-1 px-2 w-10 md:w-full md:px-5 py-3 text-gray-800 focus:outline-none"
         />
         <button
-          onClick={handleGetStarted}
-
-          className="bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium  md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition"
+          onClick={() => handleGetStarted()} // Calls without argument, uses 'query' state
+          className="bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition"
         >
           Get Started
         </button>
@@ -94,7 +108,7 @@ const HomeMain = () => {
         ].map((item, index) => (
           <span
             key={index}
-            onClick={() => setQuery(item)}
+            onClick={() => handleQueryClick(item)}
             className="bg-[rgb(221,232,248)] text-gray-800 px-4 py-2 rounded-full text-sm hover:bg-[rgb(55,0,231)]/10 cursor-pointer hover:text-gray-900 transition"
           >
             {item}

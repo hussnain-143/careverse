@@ -1,18 +1,10 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { Send, Mic, Menu, Globe, Moon, User, Settings, X } from "lucide-react";
+import { Send, Mic, Menu, Globe, Moon, User, Settings, X, Brain } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setApiData } from "../../src/store/dataSlice";
-
-/**
- * ChatPage
- * - Expects backend messages objects in shape: { role: "assistant"|"user", content: "..." }
- * - Safe loading: only requests messages when conversationId exists in sessionStorage
- * - Shows user message instantly, shows temporary "Thinking..." assistant bubble,
- *   replaces it when server reply arrives.
- */
 
 const ChatPage = () => {
   // ========== STATES ==========
@@ -451,9 +443,13 @@ const ChatPage = () => {
                 <MessageBubble key={index} msg={msg} index={index} />
               ))
             ) : (
-              <div className="text-center text-sm text-gray-500 py-8">
-                No messages yet. Select a chat from the left or start a new one.
-              </div>
+                <div className="relative flex justify-center">
+                  <Brain
+                    className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse"
+                    strokeWidth={2}
+                  />
+                  <div className="absolute inset-0 -m-4 rounded-full bg-[rgb(61,40,223)/.1] animate-ping" />
+                </div>
             )}
           </div>
         </div>
