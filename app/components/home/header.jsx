@@ -6,6 +6,18 @@ import Link from "next/link";
 const HomeHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // get token from any storage
+  const token =
+    typeof window !== "undefined" &&
+    (localStorage.getItem("authToken") || sessionStorage.getItem("authToken"));
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    sessionStorage.removeItem("authToken");
+    setIsOpen(false);
+    window.location.href = "/login";
+  };
+
   return (
     <>
       <header className="flex justify-between items-center px-6 sm:px-12 py-6 relative">
@@ -31,24 +43,33 @@ const HomeHeader = () => {
           >
             About Us
           </Link>
-          <Link
-            href="/login"
-            className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
-          >
-            Login
-          </Link>
+
+          {token ? (
+            <button
+              onClick={handleLogout}
+              className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
+            >
+              Login
+            </Link>
+          )}
         </nav>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile menu button */}
         <button
           className="md:hidden text-gray-800 focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
-          aria-label="Toggle Menu"
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
 
-        {/* Mobile Menu Drawer */}
+        {/* Mobile Drawer */}
         {isOpen && (
           <div className="absolute top-full left-0 w-full bg-white shadow-md rounded-b-2xl flex flex-col items-center py-6 space-y-4 md:hidden z-50">
             <Link
@@ -65,13 +86,23 @@ const HomeHeader = () => {
             >
               About Us
             </Link>
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
-            >
-              Login
-            </Link>
+
+            {token ? (
+              <button
+                onClick={handleLogout}
+                className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 px-5 rounded-full transition"
+              >
+                Login
+              </Link>
+            )}
           </div>
         )}
       </header>

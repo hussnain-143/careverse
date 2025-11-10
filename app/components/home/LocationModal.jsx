@@ -10,25 +10,64 @@ export default function LocationModal() {
     if (!saved) setShow(true);
   }, []);
 
-  const handleAllow = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-          };
-          localStorage.setItem("userLocation", JSON.stringify(location));
-          setShow(false);
-        },
-        () => alert("Unable to retrieve location.")
-      );
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-  };
+const handleAllow = () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
+  }
 
-  const handleManual = () => (window.location.href = "/enter-location");
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    console.log(lat);
+    console.log(lon);
+
+
+    try {
+      // reverse geocode call
+      const geoRes = await fetch(
+        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=${process.env.NEXT_PUBLIC_GEOCODE_KEY}`
+      );
+      const geoData = await geoRes.json();
+      const comp = geoData.results[0].components;
+
+      const finalData = {
+        latitude: lat,
+        longitude: lon,
+        city: comp.city || comp.town || comp.village || "",
+        state: comp.state || "",
+        country: comp.country || "",
+        countryCode: comp["ISO_3166-1_alpha-2"] || "",
+      };
+
+      // save locally
+      localStorage.setItem("userLocation", JSON.stringify(finalData));
+      setShow(false);
+
+      // send to backend if user login
+      const token =
+        localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+      if (token) {
+        await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/location`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(finalData),
+          }
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      alert("Something went wrong while getting location data");
+    }
+  });
+};
 
   if (!show) return null;
 
@@ -64,12 +103,6 @@ export default function LocationModal() {
             className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-3 rounded-full transition"
           >
             Allow Location Access
-          </button>
-          <button
-            onClick={handleManual}
-            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-full transition"
-          >
-            Enter Manually
           </button>
         </div>
       </div>

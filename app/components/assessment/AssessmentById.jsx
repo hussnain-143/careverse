@@ -52,6 +52,7 @@ export default function AssessmentById() {
   const params = useParams();
   const assessmentId = params.id;
   const [value, setValue] = useState();
+  const [loc, setLoc] = useState([]);
   const [activeTab, setActiveTab] = useState("Overview");
 
   // Fetch assessment by ID
@@ -79,6 +80,34 @@ export default function AssessmentById() {
     };
 
     if (assessmentId) loadAssessment();
+        const getLocation = async () => {
+          const token =
+            localStorage.getItem("authToken") ||
+            sessionStorage.getItem("authToken");
+    
+          try {
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/location`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "ngrok-skip-browser-warning": "true",
+                },
+              }
+            );
+            const loc = await res.json();
+            
+             // <-- your line
+            const { location } = loc.data;
+            setLoc(location ?? []);
+            // <-- your line
+           
+          } catch (err) {
+            console.error("getLocation error:", err);
+          }
+        }
+    
+        getLocation();
   }, [assessmentId]);
 
   if (!value) return <div><Loading/></div>;
@@ -210,7 +239,7 @@ export default function AssessmentById() {
             </div>
             <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-gray-500" />
-              Set My Location: <span className="font-medium">San Francisco, CA</span>
+              My Location: <span className="font-medium">{loc.city}, {loc.countryCode}</span>
             </p>
           </div>
 
@@ -244,7 +273,11 @@ export default function AssessmentById() {
             <section className="max-w-6xl mx-auto mb-12 sm:mb-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-2xl overflow-hidden shadow-xl border lg:h-150 border-gray-200">
-                  <img src="https://placehold.co/600x400/DDEEFF/3040A0/png?text=San+Francisco+Map" alt="Map" className="w-full h-64 sm:h-80 lg:h-full object-cover" />
+                <img
+                  src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=13&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
+                  alt="Map"
+                  className="w-full h-64 sm:h-80 lg:h-full object-cover"
+                />
                 </div>
                 <div className="flex flex-col gap-4">
                   {(providers || []).map((doc) => (
