@@ -546,7 +546,7 @@ export default function AssessmentResults() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-2xl overflow-hidden shadow-xl border lg:h-150 border-gray-200">
                 <img
-                  src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=13&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
+                  src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=11&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
                   alt="Map"
                   className="w-full h-64 sm:h-80 lg:h-full object-cover"
                 />
@@ -577,7 +577,7 @@ export default function AssessmentResults() {
                         </div>
                       </div>
                       <Link
-                        href={doc.bookingUrl}
+                        href={doc?.bookingUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full sm:w-auto bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
