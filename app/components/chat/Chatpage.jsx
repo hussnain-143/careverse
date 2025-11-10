@@ -142,11 +142,10 @@ const ChatPage = () => {
 
       const resp = await res.json();
       if (!resp.success) {
-        setPopup(resp.message);
-        
-      }
 
-      console.log(resp)
+        setPopup(resp.message);
+        return;
+      }
       dispatch(setApiData(resp)); 
       router.push('/assessment-results')
     } catch (err) {
