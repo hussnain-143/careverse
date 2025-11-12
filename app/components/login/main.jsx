@@ -1,7 +1,9 @@
 "use client";
 import React, { useActionState } from "react";
 import { useRouter } from "next/navigation";
+import { useFormStatus } from "react-dom"; // <-- NEW: Import useFormStatus for pending status
 
+// --- 1. The Action Function ---
 async function loginAction(prevState, formData) {
   const email = formData.get("email")?.trim();
   const password = formData.get("password")?.trim();
@@ -49,18 +51,20 @@ async function loginAction(prevState, formData) {
       return { success: false, errors: formatted };
     }
 
- const { token } = data.data;
+    const { token } = data.data;
 
     // token store
     if (token) {
-        localStorage.removeItem("authToken");
-        sessionStorage.removeItem("authToken");
+      // NOTE: Using localStorage/sessionStorage in the action function is generally fine in Next.js environments
+      // if you cannot use a secure cookie strategy.
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken");
 
-        if (rememberMe) {
+      if (rememberMe) {
         localStorage.setItem("authToken", token);
-        } else {
+      } else {
         sessionStorage.setItem("authToken", token);
-        }
+      }
     }
 
     return { success: true, message: "Login successful!", errors: {} };
@@ -69,6 +73,32 @@ async function loginAction(prevState, formData) {
   }
 }
 
+// --- 2. Submit Button Component (to access loading state) ---
+function LoginSubmitButton() {
+  // Access the pending status of the parent form's action
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      // Use the 'pending' status from useFormStatus to disable and show loader
+      disabled={pending}
+      className={`w-full bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base flex items-center justify-center gap-2 ${
+        pending ? "opacity-70 cursor-not-allowed" : ""
+      }`}
+    >
+      {pending ? (
+        <>
+<div className="size-5 border border-white rounded-full border-b-transparent animate-spin"></div>
+        </>
+      ) : (
+        "Login"
+      )}
+    </button>
+  );
+}
+
+// --- 3. Main Page Component ---
 export default function LoginPage() {
   const router = useRouter();
 
@@ -132,12 +162,11 @@ export default function LoginPage() {
                   className="w-full text-gray-700 rounded-md border border-gray-300 p-2 sm:p-3 focus:ring-2 focus:ring-[rgb(55,0,231)] outline-none text-sm sm:text-base"
                 />
                 {state.errors?.password && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {state.errors.password}
-                  </p>
+                  <p className="text-red-500 text-sm mt-1">{state.errors.password}</p>
                 )}
               </div>
 
+              {/* Remember & Forgot */}
               <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-0 text-sm">
                 <label className="flex items-center gap-2 text-gray-600">
                   <input
@@ -152,15 +181,10 @@ export default function LoginPage() {
                 </a>
               </div>
 
-              {/* submit */}
-              <button
-                type="submit"
-                className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base"
-              >
-                Login
-              </button>
+              {/* Submit button using the new component */}
+              <LoginSubmitButton />
 
-              {/* API top error */}
+              {/* API error */}
               {state.errors?.api && (
                 <p className="text-red-500 text-sm text-center mt-2">
                   {state.errors.api}

@@ -40,6 +40,11 @@ const HomeMain = () => {
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
+    if( token== "" || !token ){
+       router.push("/login");
+       return
+    }
+
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/start`,
