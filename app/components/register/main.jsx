@@ -123,7 +123,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Form Card */}
-          <div className="bg-[rgb(221,232,248)] backdrop-blur-md rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-sm sm:max-w-md">
+          <div className="bg-[rgb(221,232,248)] backdrop-blur-md mb-5 rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-sm sm:max-w-md">
             <h1 className="text-xl sm:text-2xl font-bold text-center mb-2 text-black">
               Create an Account
             </h1>
