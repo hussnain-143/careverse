@@ -6,12 +6,9 @@ import {
   Star,
   Stethoscope,
   Brain,
-  Menu,
   RefreshCcw,
-  User,
   AlertTriangle,
   Info,
-  X,
   AlertCircle,
   CheckCircle,
   Package,
@@ -19,37 +16,21 @@ import {
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { apiClient } from "../../src/utils/apiClient";
 
-/* ────────────────────── Responsive Header (with dropdown) ────────────────────── */
+/* ────────────────────── Header ────────────────────── */
 const Header = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [assessments, setAssessments] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // -------------------------------------------------
-  // 1. Load assessments (once, when component mounts)
-  // -------------------------------------------------
+  // Load assessments via apiClient
   useEffect(() => {
     const loadAssessments = async () => {
-      const token =
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("authToken");
-
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "ngrok-skip-browser-warning": "true",
-            },
-          }
-        );
-        const listData = await res.json();
-
-        // <-- your line
-        const { assessments } = listData.data;
+        const res = await apiClient.get("/api/v1/assessments");
+        const { assessments } = res.data;
+        console.log(res.data);
         setAssessments(assessments ?? []);
       } catch (err) {
         console.error("loadAssessments error:", err);
@@ -59,9 +40,7 @@ const Header = () => {
     loadAssessments();
   }, []);
 
-  // -------------------------------------------------
-  // 2. Close dropdown when clicking outside
-  // -------------------------------------------------
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -75,14 +54,12 @@ const Header = () => {
   return (
     <header className="fixed inset-x-0 top-0 bg-white border-b border-gray-100 shadow-sm z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 cursor-pointer">
           <div className="w-5 h-5 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-md" />
           <h1 className="font-semibold text-lg text-gray-900">Careverse</h1>
         </Link>
 
         <div className="flex items-center gap-8">
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8 text-sm">
             <Link
               href="/"
@@ -91,7 +68,6 @@ const Header = () => {
               Home
             </Link>
 
-            {/* ----- DROPDOWN BUTTON ----- */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -115,7 +91,6 @@ const Header = () => {
                 </svg>
               </button>
 
-              {/* ----- DROPDOWN LIST ----- */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50">
                   {assessments.length === 0 ? (
@@ -124,121 +99,25 @@ const Header = () => {
                     </p>
                   ) : (
                     <ul className="max-h-80 overflow-y-auto">
-                      {assessments.map((a) => {
-                        const title = a.possibleCondition;
-
-                        return (
-                          <li key={a.id}>
-                            <Link
-                              href={`/assessment/${a.id}`}
-                              onClick={() => setDropdownOpen(false)}
-                              className="block px-4 py-3 text-sm text-gray-700 hover:bg-[rgb(246,244,255)] transition"
-                            >
-                              {title}
-                            </Link>
-                          </li>
-                        );
-                      })}
+                      {assessments.map((a) => (
+                        <li key={a.id}>
+                          <Link
+                            href={`/assessment/${a.id}`}
+                            onClick={() => setDropdownOpen(false)}
+                            className="block px-4 py-3 text-sm text-gray-700 hover:bg-[rgb(246,244,255)] transition"
+                          >
+                            {a.possibleCondition}
+                          </Link>
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </div>
               )}
             </div>
           </nav>
-
-          {/* Desktop Profile */}
-          <div className="hidden md:flex items-center gap-6">
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
-              <User className="w-5 h-5 text-white/90" />
-            </div>
-          </div>
         </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
       </div>
-
-      {/* Mobile Menu – now with Assessments dropdown */}
-      {isOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white">
-          <div className="px-4 py-3 space-y-3">
-            <Link
-              href="/"
-              className="block text-gray-500 hover:text-[rgb(61,40,223)] transition text-sm"
-            >
-              Home
-            </Link>
-
-            {/* Mobile Assessments Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full text-left text-gray-500 hover:text-[rgb(61,40,223)] transition text-sm flex items-center justify-between"
-              >
-                My Assessments
-                <svg
-                  className={`w-4 h-4 transition-transform ${
-                    dropdownOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {/* Dropdown List */}
-              {dropdownOpen && (
-                <div className="mt-2 bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
-                  {assessments.length === 0 ? (
-                    <p className="px-4 py-2 text-xs text-gray-500">
-                      No assessments yet.
-                    </p>
-                  ) : (
-                    <ul className="max-h-60 overflow-y-auto">
-                      {assessments.map((a) => {
-                        const title = a.possibleCondition;
-                        return (
-                          <li key={a.id}>
-                            <Link
-                              href={`/assessment/${a.id}`}
-                              onClick={() => {
-                                setDropdownOpen(false);
-                                setIsOpen(false); // close mobile menu too
-                              }}
-                              className="block px-4 py-2 text-xs text-gray-700 hover:bg-[rgb(246,244,255)] transition"
-                            >
-                              {title}
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Profile */}
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
-                <User className="w-5 h-5 text-white/90" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };
@@ -258,50 +137,34 @@ const ProviderAvatar = ({ initials }) => (
   </div>
 );
 
+/* ────────────────────── Assessment Results Page ────────────────────── */
 export default function AssessmentResults() {
   const router = useRouter();
   const data = useSelector((state) => state.data.apiData);
   const [loc, setLoc] = useState([]);
   const [activeTab, setActiveTab] = useState("Overview");
 
-  // redirect back if no data
+  // Redirect if no data
   useEffect(() => {
-    if (!data) {
-      router.push("/chat");
-    }
-    const getLocation = async () => {
-      const token =
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("authToken");
+    if (!data) router.push("/chat");
 
+    const fetchLocation = async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/location`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "ngrok-skip-browser-warning": "true",
-            },
-          }
-        );
-        const loc = await res.json();
-        // <-- your line
-        const { location } = loc.data;
+        const res = await apiClient.get("/api/v1/users/location");
+        const { location } = res.data;
+        console.log(res.data);
         setLoc(location ?? []);
-        // <-- your line
       } catch (err) {
         console.error("getLocation error:", err);
       }
     };
 
-    getLocation();
+    fetchLocation();
   }, [data]);
 
-  if (!data) return null; // or a loader
+  if (!data) return null;
 
-  // extract data
   const {
-    assessmentId,
     possibleCondition,
     disclaimer,
     severity,
@@ -322,7 +185,6 @@ export default function AssessmentResults() {
     info: <Info className="w-6 h-6 text-[rgb(61,40,223)]" />,
   };
 
-  // severity color mapping
   const severityColor = {
     emergency: "bg-red-100 text-red-700",
     high: "bg-orange-100 text-orange-700",

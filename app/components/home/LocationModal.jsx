@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { MapPin, X } from "lucide-react";
+import { apiClient } from "../../src/utils/apiClient"; // adjust path if needed
 
 export default function LocationModal() {
   const [show, setShow] = useState(false);
@@ -10,64 +11,50 @@ export default function LocationModal() {
     if (!saved) setShow(true);
   }, []);
 
-const handleAllow = () => {
-  if (!navigator.geolocation) {
-    alert("Geolocation not supported");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(async (position) => {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-
-    console.log(lat);
-    console.log(lon);
-
-
-    try {
-      // reverse geocode call
-      const geoRes = await fetch(
-        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=${process.env.NEXT_PUBLIC_GEOCODE_KEY}`
-      );
-      const geoData = await geoRes.json();
-      const comp = geoData.results[0].components;
-
-      const finalData = {
-        latitude: lat,
-        longitude: lon,
-        city: comp.city || comp.town || comp.village || "",
-        state: comp.state || "",
-        country: comp.country || "",
-        countryCode: comp["ISO_3166-1_alpha-2"] || "",
-      };
-
-      // save locally
-      localStorage.setItem("userLocation", JSON.stringify(finalData));
-      setShow(false);
-
-      // send to backend if user login
-      const token =
-        localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-
-      if (token) {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/location`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(finalData),
-          }
-        );
-      }
-    } catch (err) {
-      console.log(err);
-      alert("Something went wrong while getting location data");
+  const handleAllow = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported");
+      return;
     }
-  });
-};
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      try {
+        // Reverse geocode
+        const geoRes = await fetch(
+          `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=${process.env.NEXT_PUBLIC_GEOCODE_KEY}`
+        );
+        const geoData = await geoRes.json();
+        const comp = geoData.results[0].components;
+
+        const finalData = {
+          latitude: lat,
+          longitude: lon,
+          city: comp.city || comp.town || comp.village || "",
+          state: comp.state || "",
+          country: comp.country || "",
+          countryCode: comp["ISO_3166-1_alpha-2"] || "",
+        };
+
+        // Save locally
+        localStorage.setItem("userLocation", JSON.stringify(finalData));
+        setShow(false);
+
+        // Send to backend if user logged in
+        const token =
+          localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+        if (token) {
+          await apiClient.patch('/api/v1/users/location', finalData);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Something went wrong while getting location data");
+      }
+    });
+  };
 
   if (!show) return null;
 
