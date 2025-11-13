@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Send,
-  Mic,
   Menu,
   Globe,
   Moon,
@@ -18,11 +17,10 @@ import { setApiData } from "../../src/store/dataSlice";
 import Loading from "../../loading";
 
 const ChatPage = () => {
-  // ========== STATES ==========
   const [Sidebar, setSidebar] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [ListMsg, setListMsg] = useState([]); // conversation list
-  const [CurrentMsg, setCurrentMsg] = useState([]); // array of message objects
+  const [ListMsg, setListMsg] = useState([]);
+  const [CurrentMsg, setCurrentMsg] = useState([]);
   const [topic, setTopic] = useState("");
   const [input, setInput] = useState("");
   const [popup, setPopup] = useState("");
@@ -33,25 +31,22 @@ const ChatPage = () => {
   const chatScrollRef = useRef(null);
   const dispatch = useDispatch();
 
-  // ========== HELPERS / HANDLERS ==========
-  const moveHome = () => {
-    router.push("/");
-  };
+  // ---------------- Handlers ----------------
+
+  const moveHome = () => router.push("/");
 
   const handleSend = async () => {
     if (!input.trim()) return;
     setSend(true);
     const text = input;
     setInput("");
-
     const conversationId = sessionStorage.getItem("conversationId");
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
-    setCurrentMsg((prev = []) => [...prev, { role: "user", content: text }]);
-
+    setCurrentMsg((prev) => [...prev, { role: "user", content: text }]);
     const thinkingId = Date.now();
-    setCurrentMsg((prev = []) => [
+    setCurrentMsg((prev) => [
       ...prev,
       { role: "assistant", content: "Thinking...", temp: thinkingId },
     ]);
@@ -68,19 +63,20 @@ const ChatPage = () => {
           body: JSON.stringify({ message: text }),
         }
       );
+
       const resp = await res.json();
       const reply = resp?.data?.message ?? resp?.data ?? null;
 
       if (reply) {
-        setCurrentMsg((prev = []) =>
+        setCurrentMsg((prev) =>
           prev.map((m) => (m.temp === thinkingId ? reply : m))
         );
       } else {
-        setCurrentMsg((prev = []) => prev.filter((m) => m.temp !== thinkingId));
+        setCurrentMsg((prev) => prev.filter((m) => m.temp !== thinkingId));
       }
     } catch (err) {
       console.error("network error:", err);
-      setCurrentMsg((prev = []) => prev.filter((m) => m.temp !== thinkingId));
+      setCurrentMsg((prev) => prev.filter((m) => m.temp !== thinkingId));
     } finally {
       setSend(false);
     }
@@ -93,7 +89,6 @@ const ChatPage = () => {
   const loadSpecificConversation = async (id) => {
     if (!id) return;
     sessionStorage.setItem("conversationId", id);
-
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
@@ -124,7 +119,6 @@ const ChatPage = () => {
     const conversationId = sessionStorage.getItem("conversationId");
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments/generate`,
@@ -153,7 +147,8 @@ const ChatPage = () => {
     }
   };
 
-  // ========== EFFECTS ==========
+  // ---------------- Effects ----------------
+
   useEffect(() => {
     const loadChats = async () => {
       const conversationId = sessionStorage.getItem("conversationId");
@@ -198,6 +193,7 @@ const ChatPage = () => {
         console.error("loadChats error:", err);
       }
     };
+
     loadChats();
   }, []);
 
@@ -211,13 +207,22 @@ const ChatPage = () => {
   }, [CurrentMsg]);
 
   useEffect(() => {
+    if (mobileOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
     if (popup) {
       const t = setTimeout(() => setPopup(""), 4000);
       return () => clearTimeout(t);
     }
   }, [popup]);
 
-  // ========== SUB-COMPONENTS ==========
+  // ---------------- Subcomponents ----------------
+
   const MessageBubble = ({ msg, index }) => {
     const role = msg?.role ?? "user";
     const content = msg?.content ?? "";
@@ -230,6 +235,7 @@ const ChatPage = () => {
             ? "justify-start"
             : "items-start flex-row-reverse"
         } items-end gap-3 mb-8`}
+        aria-live="polite"
       >
         {role === "assistant" ? (
           <div className="flex flex-col items-start gap-2">
@@ -260,82 +266,96 @@ const ChatPage = () => {
     );
   };
 
-  // ========== RENDER ==========
+  // ---------------- Render ----------------
   return (
     <>
       {generateAssessment && <Loading />}
       <div className="flex min-h-screen bg-[#f8f8ff] text-gray-800 relative">
         {/* Sidebar */}
         <aside
-          className={`flex flex-col w-64 border-r border-gray-200 bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300 overflow-y-auto`}
+          className={`flex flex-col w-64 border-r border-gray-200 bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          ${Sidebar ? "md:translate-x-0" : "md:-translate-x-full"}
+        `}
         >
-          <div className="flex flex-col justify-between flex-1">
-            <div className="flex flex-col flex-1 justify-center px-6 py-6 space-y-6">
-              <Link href="/" className="flex items-center gap-2 mb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-4 justify-between px-6 mt-6 border-b pb-4">
+              <Link href="/" className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-md" />
                 <h1 className="font-semibold text-xl text-gray-900">
                   Careverse
                 </h1>
               </Link>
+              <button
+                className="md:hidden p-2 rounded hover:bg-gray-100"
+                onClick={() => setMobileOpen(false)}
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
 
+            {/* Scrollable Old Chats */}
+            <ul className="overflow-y-auto h-[calc(100vh-240px)] space-y-2 text-sm px-6">
               <button
                 onClick={moveHome}
-                className="w-full bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white font-medium py-2.5 rounded-2xl transition hover:opacity-90"
+                className="w-full cursor-pointer bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white font-medium py-2.5 rounded-2xl mb-6 transition hover:opacity-90 px-6"
               >
                 + New Chat
               </button>
+              <p className="text-xs text-gray-500 font-semibold mb-3 uppercase tracking-wider px-6">
+                Old Chats
+              </p>
+              {ListMsg.map((item, i) => {
+                const activeId = sessionStorage.getItem("conversationId");
+                const isActive = activeId === item.id;
+                return (
+                  <li
+                    key={item.id ?? i}
+                    onClick={() => loadSpecificConversation(item.id)}
+                    className={`px-3 py-2 rounded-xl cursor-pointer transition truncate text-gray-700 ${
+                      isActive
+                        ? "bg-[rgb(61,40,223)]/20 text-[rgb(61,40,223)]"
+                        : "hover:bg-gray-100"
+                    }`}
+                  >
+                    {item.title}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
-              <div className="overflow-y-auto flex-1">
-                <p className="text-xs text-gray-500 font-semibold mb-3 uppercase tracking-wider">
-                  Old Chats
-                </p>
-                <ul className="space-y-2 text-sm">
-                  {ListMsg.map((item, i) => {
-                    const activeId = sessionStorage.getItem("conversationId");
-                    const isActive = activeId === item.id;
-                    return (
-                      <li
-                        key={item.id ?? i}
-                        onClick={() => loadSpecificConversation(item.id)}
-                        className={`px-3 py-2 rounded-xl cursor-pointer transition truncate text-gray-700 ${
-                          isActive
-                            ? "bg-[rgb(61,40,223)]/20 text-[rgb(61,40,223)]"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {item.title}
-                      </li>
-                    );
-                  })}
-                </ul>
+          <div className="border-t py-4 px-6 text-left">
+            <div className="flex items-center gap-2 mb-3 mt-1.5">
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
+                <User className="w-5 h-5 text-white/90" />
               </div>
+              <span className="text-sm font-medium text-gray-700">
+                John Doe
+              </span>
             </div>
 
-            <div className="border-t py-4 px-6 text-left">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
-                  <User className="w-5 h-5 text-white/90" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  John Doe
-                </span>
-              </div>
-              <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-[rgb(61,40,223)] w-full text-left p-2 rounded-lg hover:bg-gray-100">
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-            </div>
+            <button className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-[rgb(61,40,223)] mt-1 w-full text-left p-2 rounded-lg hover:bg-gray-100">
+              <Settings className="w-4 h-4" /> Settings
+            </button>
           </div>
         </aside>
 
-        {/* Main area */}
-        <div className="flex-1 flex flex-col md:ml-64">
+        {/* Main Content */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+            Sidebar ? "md:ml-64" : "ml-0"
+          }`}
+        >
           {/* Header */}
-          <header className="flex justify-between items-center px-6 py-4 border-b bg-white fixed top-0 left-0 right-0 md:left-64 z-30">
+          <header className="flex justify-between items-center pb-4 px-6 pt-3 border-b bg-white sticky top-0 z-20">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setSidebar((s) => !s)}
-                className="p-2 rounded-md hover:bg-gray-100"
+                onClick={() => {
+                  if (window.innerWidth < 768) setMobileOpen(true);
+                  else setSidebar((s) => !s);
+                }}
+                className="cursor-pointer p-2 rounded-md hover:bg-gray-100"
               >
                 <Menu className="w-6 h-6 text-gray-500" />
               </button>
@@ -345,38 +365,50 @@ const ChatPage = () => {
             </div>
 
             <div className="flex items-center gap-5">
-              <button
-                onClick={generate_assessment}
-                className="text-[rgb(61,40,223)] border border-[rgb(61,40,223)] px-4 py-2 rounded-full text-sm font-medium hover:text-white hover:bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]"
-              >
-                Generate Assessment
-              </button>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/"
+                  className="text-gray-700 text-sm font-medium hover:text-[rgb(61,40,223)]"
+                >
+                  Home
+                </Link>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={generate_assessment}
+                  className="text-[rgb(61,40,223)] cursor-pointer px-4 py-2 rounded-4xl border border-[rgb(61,40,223)] text-sm font-medium hover:text-white hover:bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]"
+                >
+                  Generate Assessment
+                </button>
+                <span className="text-gray-300">|</span>
+              </div>
+              <Globe className="w-5 h-5 text-gray-600 cursor-pointer hover:text-[rgb(61,40,223)]" />
+              <Moon className="w-5 h-5 text-gray-600 cursor-pointer hover:text-yellow-500" />
             </div>
           </header>
 
-          {/* Scrollable Chat Area */}
-          <div
-            ref={chatScrollRef}
-            className="flex-1 overflow-y-auto pt-20 pb-24 px-6"
-          >
-            <div className="w-full max-w-screen-md mx-auto">
-              {CurrentMsg.length ? (
+          {/* Chat Messages (Scrollable Area) */}
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto py-6 px-4">
+            <div className="w-full max-w-screen-md mx-auto px-4">
+              {CurrentMsg?.length ? (
                 CurrentMsg.map((msg, index) => (
                   <MessageBubble key={index} msg={msg} index={index} />
                 ))
               ) : (
-                <div className="relative flex justify-center mt-10">
-                  <Brain className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse" />
+                <div className="relative flex justify-center">
+                  <Brain
+                    className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse"
+                    strokeWidth={2}
+                  />
                   <div className="absolute inset-0 -m-4 rounded-full bg-[rgb(61,40,223)/.1] animate-ping" />
                 </div>
               )}
             </div>
           </div>
 
-          {/* Footer / Input */}
-          <footer className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t p-4 z-30">
-            <div className="w-full max-w-screen-md mx-auto flex flex-col items-center">
-              <div className="flex items-center w-full border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+          {/* Input/Footer */}
+          <div className="border-t bg-white p-4 sticky bottom-0 z-10">
+            <div className="w-full max-w-screen-md mx-auto px-4">
+              <div className="flex items-center w-full bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
                 <input
                   type="text"
                   value={input}
@@ -388,7 +420,7 @@ const ChatPage = () => {
                 <button
                   onClick={handleSend}
                   disabled={send}
-                  className={`bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white rounded-full p-2.5 hover:opacity-90 transition ${
+                  className={`bg-gradient-to-r cursor-pointer from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white rounded-full p-2.5 hover:opacity-90 transition flex items-center justify-center ${
                     send ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
@@ -404,10 +436,9 @@ const ChatPage = () => {
                 only and is not a substitute for professional medical advice.
               </p>
             </div>
-          </footer>
+          </div>
         </div>
 
-        {/* Popup */}
         {popup && (
           <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-[999]">
             <span>{popup}</span>
