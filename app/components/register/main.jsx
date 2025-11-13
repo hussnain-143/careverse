@@ -79,7 +79,7 @@ function RegisterSubmitButton() {
       type="submit"
       // Use the 'pending' status from useFormStatus to disable and show loader
       disabled={pending}
-      className={`w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base flex items-center justify-center gap-2 ${
+      className={`w-full bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-semibold py-2 sm:py-3 rounded-md transition-all duration-200 text-sm sm:text-base flex items-center justify-center gap-2 ${
         pending ? "opacity-70 cursor-not-allowed" : ""
       }`}
     >

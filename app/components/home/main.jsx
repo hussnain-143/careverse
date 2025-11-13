@@ -8,12 +8,15 @@ const HomeMain = () => {
   const [query, setQuery] = useState("");
   // 'loc' state controls the visibility of the modal. true = location is set, false = show modal.
   const [loc, setLoc] = useState(true); 
+  const [send , setSend] = useState(false);
   const router = useRouter();
 
   // -----------------------------
   // Function: Start Chat
   // -----------------------------
   const handleGetStarted = async (clickQuery = null) => {
+
+    setSend(true);
 
     const location = localStorage.getItem("userLocation");
 
@@ -22,6 +25,8 @@ const HomeMain = () => {
     if (!location || location.trim() === "") {
       // If location is missing, set state to show the modal and STOP the chat process
       setLoc(false);
+      setSend(false);
+      return
     };
 
     
@@ -41,7 +46,8 @@ const HomeMain = () => {
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
     if( token== "" || !token ){
-       router.push("/login");
+       router.push("/login")
+       setSend(false);
        return
     }
 
@@ -63,9 +69,10 @@ const HomeMain = () => {
       // Save conversation id
       const conversationId = data?.data?.conversation?.id;
       if (conversationId) sessionStorage.setItem("conversationId", conversationId);
-
+      setSend(false);
       router.push("/chat");
     } catch (err) {
+      setSend(false);
       console.log("network error", err);
     }
   };
@@ -118,11 +125,21 @@ const HomeMain = () => {
             className="flex-1 px-2 w-10 md:w-full md:px-5 py-3 text-gray-800 focus:outline-none"
           />
           <button
-            onClick={() => handleGetStarted()} 
-            className="bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition"
-          >
-            Get Started
-          </button>
+  onClick={() => handleGetStarted()}
+  disabled={send}
+  className={`bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition flex items-center justify-center gap-2 ${
+    send ? "opacity-70 cursor-not-allowed" : ""
+  }`}
+>
+  {send ? (
+    <>
+      <div className="size-5 border border-white rounded-full border-b-transparent animate-spin"></div>
+    </>
+  ) : (
+    "Get Started"
+  )}
+</button>
+
         </div>
 
         {/* Suggestions */}
