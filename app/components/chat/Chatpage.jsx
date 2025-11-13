@@ -316,7 +316,7 @@ const ChatPage = () => {
 
         {/* Sidebar */}
         <aside
-          className={`flex flex-col w-64 border-r border-gray-200 bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
+          className={`flex flex-col w-64 border-r border-gray-200 overflow-auto bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           ${Sidebar ? "md:translate-x-0" : "md:-translate-x-full"}
         `}
