@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setApiData } from "../../src/store/dataSlice";
 import Loading from "../../loading";
+import { apiClient } from '../../src/utils/apiClient';
 
 const ChatPage = () => {
   const [Sidebar, setSidebar] = useState(true);
@@ -41,8 +42,6 @@ const ChatPage = () => {
     const text = input;
     setInput("");
     const conversationId = sessionStorage.getItem("conversationId");
-    const token =
-      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
     setCurrentMsg((prev) => [...prev, { role: "user", content: text }]);
     const thinkingId = Date.now();
@@ -52,19 +51,11 @@ const ChatPage = () => {
     ]);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/${conversationId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ message: text }),
-        }
+      const resp = await apiClient.post(
+        `/api/v1/chat/conversations/${conversationId}/messages`,
+        { message: text }
       );
 
-      const resp = await res.json();
       const reply = resp?.data?.message ?? resp?.data ?? null;
 
       if (reply) {
@@ -89,22 +80,10 @@ const ChatPage = () => {
   const loadSpecificConversation = async (id) => {
     if (!id) return;
     sessionStorage.setItem("conversationId", id);
-    const token =
-      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/${id}?page=1&limit=10`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "ngrok-skip-browser-warning": "true",
-          },
-        }
-      );
-
-      const msgData = await res.json();
-      const data = msgData?.data ?? {};
+      const resp = await apiClient.get(`/api/v1/chat/conversations/${id}?page=1&limit=10`);
+      const data = resp?.data ?? {};
       const { conversation, messages } = data;
 
       setTopic(conversation?.title ?? "");
@@ -117,27 +96,16 @@ const ChatPage = () => {
   const generate_assessment = async () => {
     setGenerateAssessment(true);
     const conversationId = sessionStorage.getItem("conversationId");
-    const token =
-      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ conversationId }),
-        }
-      );
 
-      const resp = await res.json();
-      if (!resp.success) {
+    try {
+      const resp = await apiClient.post('/api/v1/assessments/generate', { conversationId });
+
+      if (!resp?.success) {
         setGenerateAssessment(false);
-        setPopup(resp.message);
+        setPopup(resp?.message || "Something went wrong");
         return;
       }
+
       dispatch(setApiData(resp));
       setGenerateAssessment(false);
       router.push("/assessment-results");
@@ -152,34 +120,13 @@ const ChatPage = () => {
   useEffect(() => {
     const loadChats = async () => {
       const conversationId = sessionStorage.getItem("conversationId");
-      const token =
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("authToken");
 
       try {
-        const resList = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations?page=1&limit=12`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "ngrok-skip-browser-warning": "true",
-            },
-          }
-        );
-        const listData = await resList.json();
+        const listData = await apiClient.get('/api/v1/chat/conversations?page=1&limit=12');
         setListMsg(listData?.data?.conversations ?? []);
 
         if (conversationId) {
-          const resMsg = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/${conversationId}?page=1&limit=10`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "ngrok-skip-browser-warning": "true",
-              },
-            }
-          );
-          const msgData = await resMsg.json();
+          const msgData = await apiClient.get(`/api/v1/chat/conversations/${conversationId}?page=1&limit=10`);
           const data = msgData?.data ?? {};
           const { conversation, messages } = data;
 
@@ -241,15 +188,17 @@ const ChatPage = () => {
           <div className="flex flex-col items-start gap-2">
             <span className="text-xs text-gray-500">Careverse</span>
             <img
-              src="https://api.dicebear.com/7.x/adventurer/svg?seed=Careverse"
+              src="https://api.dicebear.com/9.x/bottts/svg?seed=Liam"
               alt="Assistant avatar"
-              className="w-9 h-9 rounded-full border border-gray-200 shadow-sm"
+              className="w-8 h-8 rounded-full border bg-slate-300 p-1 border-gray-200 shadow-sm"
             />
           </div>
         ) : (
           <div className="flex flex-col items-start gap-2">
             <span className="text-xs text-gray-500">You</span>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-200 to-orange-300 border border-gray-200" />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]">
+                <User className="w-5 h-5 text-white" />
+              </div>
           </div>
         )}
 
@@ -267,6 +216,7 @@ const ChatPage = () => {
   };
 
   // ---------------- Render ----------------
+
   return (
     <>
       {generateAssessment && <Loading />}
@@ -282,9 +232,7 @@ const ChatPage = () => {
             <div className="flex items-center gap-2 mb-4 justify-between px-6 mt-6 border-b pb-4">
               <Link href="/" className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-md" />
-                <h1 className="font-semibold text-xl text-gray-900">
-                  Careverse
-                </h1>
+                <h1 className="font-semibold text-xl text-gray-900">Careverse</h1>
               </Link>
               <button
                 className="md:hidden p-2 rounded hover:bg-gray-100"
@@ -327,17 +275,15 @@ const ChatPage = () => {
 
           <div className="border-t py-4 px-6 text-left">
             <div className="flex items-center gap-2 mb-3 mt-1.5">
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
-                <User className="w-5 h-5 text-white/90" />
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]">
+                <User className="w-5 h-5 text-white" />
               </div>
-              <span className="text-sm font-medium text-gray-700">
-                John Doe
-              </span>
+              <span className="text-sm font-medium text-gray-700">John Doe</span>
             </div>
 
-            <button className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-[rgb(61,40,223)] mt-1 w-full text-left p-2 rounded-lg hover:bg-gray-100">
+            <Link href="/user" className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-[rgb(61,40,223)] mt-1 w-full text-left p-2 rounded-lg hover:bg-gray-100">
               <Settings className="w-4 h-4" /> Settings
-            </button>
+            </Link>
           </div>
         </aside>
 
@@ -359,9 +305,7 @@ const ChatPage = () => {
               >
                 <Menu className="w-6 h-6 text-gray-500" />
               </button>
-              <h2 className="text-[17px] font-semibold text-gray-900">
-                {topic}
-              </h2>
+              <h2 className="text-[17px] font-semibold text-gray-900">{topic}</h2>
             </div>
 
             <div className="flex items-center gap-5">
@@ -386,19 +330,14 @@ const ChatPage = () => {
             </div>
           </header>
 
-          {/* Chat Messages (Scrollable Area) */}
+          {/* Chat Messages */}
           <div ref={chatScrollRef} className="flex-1 overflow-y-auto py-6 px-4">
             <div className="w-full max-w-screen-md mx-auto px-4">
               {CurrentMsg?.length ? (
-                CurrentMsg.map((msg, index) => (
-                  <MessageBubble key={index} msg={msg} index={index} />
-                ))
+                CurrentMsg.map((msg, index) => <MessageBubble key={index} msg={msg} index={index} />)
               ) : (
                 <div className="relative flex justify-center">
-                  <Brain
-                    className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse"
-                    strokeWidth={2}
-                  />
+                  <Brain className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse" strokeWidth={2} />
                   <div className="absolute inset-0 -m-4 rounded-full bg-[rgb(61,40,223)/.1] animate-ping" />
                 </div>
               )}
@@ -424,16 +363,11 @@ const ChatPage = () => {
                     send ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
-                  {send ? (
-                    <div className="size-4 border border-white rounded-full border-b-transparent animate-spin"></div>
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
+                  {send ? <div className="size-4 border border-white rounded-full border-b-transparent animate-spin"></div> : <Send className="w-4 h-4" />}
                 </button>
               </div>
               <p className="text-center text-[11px] text-gray-500 mt-3">
-                Disclaimer: Careverse Assistant is for informational purposes
-                only and is not a substitute for professional medical advice.
+                Disclaimer: Careverse Assistant is for informational purposes only and is not a substitute for professional medical advice.
               </p>
             </div>
           </div>
@@ -442,9 +376,7 @@ const ChatPage = () => {
         {popup && (
           <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-[999]">
             <span>{popup}</span>
-            <button onClick={() => setPopup("")} className="font-bold ml-2">
-              ×
-            </button>
+            <button onClick={() => setPopup("")} className="font-bold ml-2">×</button>
           </div>
         )}
       </div>

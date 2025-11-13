@@ -2,6 +2,7 @@
 import React, { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom"; // <-- NEW: Import useFormStatus for pending status
+import { TokenManager } from "../../src/utils/tokenUtils";
 
 // --- 1. The Action Function ---
 async function loginAction(prevState, formData) {
@@ -36,14 +37,12 @@ async function loginAction(prevState, formData) {
     if (!res.ok) {
       let formatted = {};
 
-      // backend validation array errors
       if (Array.isArray(data.errors)) {
         data.errors.forEach((e) => {
           formatted[e.field] = e.message;
         });
       }
 
-      // backend main message
       if (data.message) {
         formatted.api = data.message;
       }
@@ -51,24 +50,22 @@ async function loginAction(prevState, formData) {
       return { success: false, errors: formatted };
     }
 
-    const { token } = data.data;
+    console.log(data.data);
 
-    // token store
-    if (token) {
-      // NOTE: Using localStorage/sessionStorage in the action function is generally fine in Next.js environments
-      // if you cannot use a secure cookie strategy.
-      localStorage.removeItem("authToken");
-      sessionStorage.removeItem("authToken");
+    const { token, refreshToken , user } = data.data;
 
-      if (rememberMe) {
-        localStorage.setItem("authToken", token);
-      } else {
-        sessionStorage.setItem("authToken", token);
-      }
+    if (user){
+        localStorage.setItem("user", JSON.stringify(user));
+    }
+    
+    // Use TokenManager to store tokens
+    if (token && refreshToken) {
+      TokenManager.setTokens(token, refreshToken, rememberMe);
     }
 
     return { success: true, message: "Login successful!", errors: {} };
   } catch (e) {
+    console.log(e)
     return { success: false, errors: { api: "Network error" } };
   }
 }

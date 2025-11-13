@@ -6,7 +6,6 @@ import {
   Star,
   Stethoscope,
   Brain,
-  RefreshCcw,
   AlertTriangle,
   Info,
   AlertCircle,
@@ -17,8 +16,9 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Loading from "../../loading";
+import { apiClient } from "../../src/utils/apiClient"; // <-- import apiClient
 
-/* ────────────────────── Minimal Header (Back + Home) ────────────────────── */
+/* ────────────────────── Minimal Header ────────────────────── */
 const Header = () => (
   <header className="fixed inset-x-0 top-0 bg-white border-b border-gray-100 shadow-sm z-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center">
@@ -56,79 +56,36 @@ export default function AssessmentById() {
   const [loc, setLoc] = useState([]);
   const [activeTab, setActiveTab] = useState("Overview");
 
-  // Fetch assessment by ID
   useEffect(() => {
     const loadAssessment = async () => {
-      const token =
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("authToken");
+      if (!assessmentId) return;
 
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments/${assessmentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "ngrok-skip-browser-warning": "true",
-            },
-          }
-        );
-        const result = await res.json();
-        setValue(result.data.assessment);
-        console.log("heree", result.data.assessment);
+        const result = await apiClient.get(`/api/v1/assessments/${assessmentId}`);
+        setValue(result?.data?.assessment);
+        console.log("Assessment data:", result?.data?.assessment);
       } catch (err) {
         console.error("loadAssessment error:", err);
       }
     };
 
-    if (assessmentId) loadAssessment();
     const getLocation = async () => {
-      const token =
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("authToken");
-
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/location`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "ngrok-skip-browser-warning": "true",
-            },
-          }
-        );
-        const loc = await res.json();
-
-        // <-- your line
-        const { location } = loc.data;
-        setLoc(location ?? []);
-        // <-- your line
+        const locResp = await apiClient.get("/api/v1/users/location");
+        setLoc(locResp?.data?.location ?? []);
       } catch (err) {
         console.error("getLocation error:", err);
       }
     };
 
+    loadAssessment();
     getLocation();
   }, [assessmentId]);
 
-  if (!value)
-    return (
-      <div>
-        <Loading />
-      </div>
-    );
+  if (!value) return <Loading />;
 
   // Extract data
-  const {
-    possibleCondition,
-    disclaimer,
-    severity,
-    warnings,
-    nextSteps,
-    providers,
-    products,
-  } = value;
-
+  const { possibleCondition, disclaimer, severity, warnings, nextSteps, providers, products } = value;
   const conditionName = possibleCondition?.name;
   const conditionDesc = possibleCondition?.description;
   const triggers = possibleCondition?.commonTriggers;

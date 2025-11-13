@@ -2,78 +2,58 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import LocationModal from "./LocationModal"; // Assuming this is imported correctly
+import LocationModal from "./LocationModal"; // adjust path
+import { apiClient } from "../../src/utils/apiClient"; // adjust path
 
 const HomeMain = () => {
   const [query, setQuery] = useState("");
-  // 'loc' state controls the visibility of the modal. true = location is set, false = show modal.
-  const [loc, setLoc] = useState(true); 
-  const [send , setSend] = useState(false);
+  const [loc, setLoc] = useState(true); // controls location modal
+  const [send, setSend] = useState(false);
   const router = useRouter();
 
   // -----------------------------
   // Function: Start Chat
   // -----------------------------
   const handleGetStarted = async (clickQuery = null) => {
-
     setSend(true);
 
     const location = localStorage.getItem("userLocation");
 
-    // Check if location is not set (null or an empty string).
-    // Note: A user's location is usually a non-empty string if set.
     if (!location || location.trim() === "") {
-      // If location is missing, set state to show the modal and STOP the chat process
       setLoc(false);
       setSend(false);
-      return
-    };
-
-    
-
-    // If location is set, continue with chat logic:
-    const userQuery = clickQuery || query.trim(); 
-    let messageToSend;
-
-    // Determine the message to send
-    if (userQuery === "") {
-      messageToSend = "Hello, I need some general health information."; 
-    } else {
-      messageToSend = userQuery;
+      return;
     }
+
+    const userQuery = clickQuery || query.trim();
+    const messageToSend =
+      userQuery === ""
+        ? "Hello, I need some general health information."
+        : userQuery;
 
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
-    if( token== "" || !token ){
-       router.push("/login")
-       setSend(false);
-       return
+    if (!token) {
+      router.push("/login");
+      setSend(false);
+      return;
     }
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/start`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ message: messageToSend }),
-        }
-      );
-
-      const data = await res.json();
+      const res = await apiClient.post("/api/v1/chat/conversations/start", {
+        message: messageToSend,
+      });
 
       // Save conversation id
-      const conversationId = data?.data?.conversation?.id;
+      const conversationId = res?.data?.conversation?.id;
       if (conversationId) sessionStorage.setItem("conversationId", conversationId);
+
       setSend(false);
       router.push("/chat");
     } catch (err) {
       setSend(false);
-      console.log("network error", err);
+      console.error("network error", err);
     }
   };
 
@@ -88,12 +68,11 @@ const HomeMain = () => {
   // Function: handle suggestion click
   // -----------------------------
   const handleQueryClick = (item) => {
-    setQuery(item);          // Set query state (UI updates asynchronously)
-    handleGetStarted(item);  // Immediately pass the item to start the chat
+    setQuery(item);
+    handleGetStarted(item);
   };
 
   return (
-    // Wrap everything in a Fragment to return a single element.
     <>
       {/* Conditional Rendering of LocationModal */}
       {loc === false && <LocationModal />}
@@ -125,21 +104,18 @@ const HomeMain = () => {
             className="flex-1 px-2 w-10 md:w-full md:px-5 py-3 text-gray-800 focus:outline-none"
           />
           <button
-  onClick={() => handleGetStarted()}
-  disabled={send}
-  className={`bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition flex items-center justify-center gap-2 ${
-    send ? "opacity-70 cursor-not-allowed" : ""
-  }`}
->
-  {send ? (
-    <>
-      <div className="size-5 border border-white rounded-full border-b-transparent animate-spin"></div>
-    </>
-  ) : (
-    "Get Started"
-  )}
-</button>
-
+            onClick={() => handleGetStarted()}
+            disabled={send}
+            className={`bg-[rgb(55,0,231)] cursor-pointer hover:bg-[rgb(75,20,255)] text-white font-medium md:font-semibold py-2 px-4 md:py-3 md:px-6 rounded-full transition flex items-center justify-center gap-2 ${
+              send ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {send ? (
+              <div className="size-5 border border-white rounded-full border-b-transparent animate-spin"></div>
+            ) : (
+              "Get Started"
+            )}
+          </button>
         </div>
 
         {/* Suggestions */}
