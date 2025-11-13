@@ -316,7 +316,7 @@ const ChatPage = () => {
 
         {/* Sidebar */}
         <aside
-          className={`flex flex-col w-64 border-r border-gray-200 overflow-auto bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
+          className={`flex flex-col w-64 border-r border-gray-200 bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           ${Sidebar ? "md:translate-x-0" : "md:-translate-x-full"}
         `}
@@ -338,7 +338,7 @@ const ChatPage = () => {
               </button>
             </div>
 
-            <div className="px-6">
+            <div className="px-6  overflow-auto">
               <button
                 onClick={moveHome}
                 className="w-full cursor-pointer bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white font-medium py-2.5 rounded-2xl mb-6 transition hover:opacity-90"
@@ -361,12 +361,12 @@ const ChatPage = () => {
                       key={item.id ?? i}
                       onClick={() => loadSpecificConversation(item.id)}
                       className={`px-3 py-2 rounded-xl cursor-pointer transition truncate text-gray-700
-        ${
-          isActive
-            ? "bg-[rgb(61,40,223)]/20 text-[rgb(61,40,223)]"
-            : "hover:bg-gray-100"
-        }
-        `}
+                        ${
+                          isActive
+                            ? "bg-[rgb(61,40,223)]/20 text-[rgb(61,40,223)]"
+                            : "hover:bg-gray-100"
+                        }
+                      `}
                     >
                       {item.title}
                     </li>
