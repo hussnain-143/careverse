@@ -1,10 +1,21 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { Send, Mic, Menu, Globe, Moon, User, Settings, X, Brain } from "lucide-react";
+import {
+  Send,
+  Mic,
+  Menu,
+  Globe,
+  Moon,
+  User,
+  Settings,
+  X,
+  Brain,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { setApiData } from "../../src/store/dataSlice";
+import Loading from "../../loading";
 
 const ChatPage = () => {
   // ========== STATES ==========
@@ -15,12 +26,13 @@ const ChatPage = () => {
   const [topic, setTopic] = useState("");
   const [input, setInput] = useState("");
   const [popup, setPopup] = useState("");
+  const [send, setSend] = useState(false);
+  const [generateAssessment, setGenerateAssessment] = useState(false);
 
   const router = useRouter();
 
   const chatScrollRef = useRef(null);
-   const dispatch = useDispatch();
-
+  const dispatch = useDispatch();
 
   // ========== HELPERS / HANDLERS ==========
 
@@ -32,6 +44,7 @@ const ChatPage = () => {
   // send message handler
   const handleSend = async () => {
     if (!input.trim()) return;
+    setSend(true); // start loader
 
     const text = input;
     setInput("");
@@ -40,17 +53,16 @@ const ChatPage = () => {
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
-    // 1) push user message immediately to UI
+    // Push user message immediately
     setCurrentMsg((prev = []) => [...prev, { role: "user", content: text }]);
 
-    // 2) push temporary assistant thinking bubble
+    // Temporary assistant bubble
     const thinkingId = Date.now();
     setCurrentMsg((prev = []) => [
       ...prev,
       { role: "assistant", content: "Thinking...", temp: thinkingId },
     ]);
 
-    // 3) perform POST
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chat/conversations/${conversationId}/messages`,
@@ -65,26 +77,21 @@ const ChatPage = () => {
       );
 
       const resp = await res.json();
-
-      // backend expected shape: resp.data.message -> { role, content } (Option A)
-      // fallback: resp.data itself
       const reply = resp?.data?.message ?? resp?.data ?? null;
 
       if (reply) {
-        // replace the thinking bubble (matched by temp id) with server reply object
+        // replace temporary bubble with real message
         setCurrentMsg((prev = []) =>
           prev.map((m) => (m.temp === thinkingId ? reply : m))
         );
       } else {
-        // no reply? remove thinking bubble and optionally add an error message
         setCurrentMsg((prev = []) => prev.filter((m) => m.temp !== thinkingId));
       }
     } catch (err) {
       console.error("network error:", err);
-      // remove thinking bubble on error
       setCurrentMsg((prev = []) => prev.filter((m) => m.temp !== thinkingId));
-      // optionally push an error system message:
-      // setCurrentMsg(prev => [...prev, { role: "assistant", content: "Network error. Please try again." }]);
+    } finally {
+      setSend(false); // stop loader
     }
   };
 
@@ -123,11 +130,12 @@ const ChatPage = () => {
   };
 
   // generate the assessment from conversation
-  const generate_assessment = async () =>{
-        const conversationId = sessionStorage.getItem("conversationId");
+  const generate_assessment = async () => {
+    setGenerateAssessment(true);
+    const conversationId = sessionStorage.getItem("conversationId");
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-      try {
+    try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/assessments/generate`,
         {
@@ -142,18 +150,18 @@ const ChatPage = () => {
 
       const resp = await res.json();
       if (!resp.success) {
-
+        setGenerateAssessment(false);
         setPopup(resp.message);
         return;
       }
-      dispatch(setApiData(resp)); 
-      router.push('/assessment-results')
+      dispatch(setApiData(resp));
+      setGenerateAssessment(false);
+      router.push("/assessment-results");
     } catch (err) {
+      setGenerateAssessment(false);
       console.error("network error:", err);
-      
     }
-
-  }
+  };
 
   // ========== EFFECTS ==========
 
@@ -212,7 +220,7 @@ const ChatPage = () => {
   }, []);
 
   // auto-scroll to bottom when messages change
- useEffect(() => {
+  useEffect(() => {
     const scrollToBottom = () => {
       if (chatScrollRef.current) {
         requestAnimationFrame(() => {
@@ -294,154 +302,162 @@ const ChatPage = () => {
 
   // ========== RENDER ==========
   return (
-    <div className="flex min-h-screen bg-[#f8f8ff] text-gray-800 relative">
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-black/40 z-30 md:hidden"
-          aria-hidden="true"
-        />
-      )}
+    <>
+      {generateAssessment && <Loading />}
+      <div className="flex min-h-screen bg-[#f8f8ff] text-gray-800 relative">
+        {/* Mobile overlay */}
+        {mobileOpen && (
+          <div
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 bg-black/40 z-30 md:hidden"
+            aria-hidden="true"
+          />
+        )}
 
-      {/* Sidebar */}
-      <aside
-        className={`flex flex-col w-64 border-r border-gray-200 bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
+        {/* Sidebar */}
+        <aside
+          className={`flex flex-col w-64 border-r border-gray-200 bg-white justify-between fixed top-0 left-0 h-full z-40 transform transition-transform duration-300
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           ${Sidebar ? "md:translate-x-0" : "md:-translate-x-full"}
         `}
-      >
-        <div>
-          <div className="flex items-center gap-2 mb-8 justify-between px-6 mt-6 border-b pb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-md" />
-              <h1 className="font-semibold text-xl text-gray-900">Careverse</h1>
+        >
+          <div>
+            <div className="flex items-center gap-2 mb-8 justify-between px-6 mt-6 border-b pb-4">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-md" />
+                <h1 className="font-semibold text-xl text-gray-900">
+                  Careverse
+                </h1>
+              </Link>
+              <button
+                className="md:hidden p-2 rounded hover:bg-gray-100"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close sidebar"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
-            <button
-              className="md:hidden p-2 rounded hover:bg-gray-100"
-              onClick={() => setMobileOpen(false)}
-              aria-label="Close sidebar"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
 
-          <div className="px-6">
-            <button
-              onClick={moveHome}
-              className="w-full cursor-pointer bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white font-medium py-2.5 rounded-2xl mb-6 transition hover:opacity-90"
-              aria-label="New chat"
-            >
-              + New Chat
-            </button>
+            <div className="px-6">
+              <button
+                onClick={moveHome}
+                className="w-full cursor-pointer bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white font-medium py-2.5 rounded-2xl mb-6 transition hover:opacity-90"
+                aria-label="New chat"
+              >
+                + New Chat
+              </button>
 
-            <p className="text-xs text-gray-500 font-semibold mb-3 uppercase tracking-wider">
-              Old Chats
-            </p>
+              <p className="text-xs text-gray-500 font-semibold mb-3 uppercase tracking-wider">
+                Old Chats
+              </p>
 
-            <ul className="space-y-2 text-sm">
-              {ListMsg.map((item, i) => {
-                const activeId = sessionStorage.getItem("conversationId");
-                const isActive = activeId === item.id;
+              <ul className="space-y-2 text-sm">
+                {ListMsg.map((item, i) => {
+                  const activeId = sessionStorage.getItem("conversationId");
+                  const isActive = activeId === item.id;
 
-                return (
-                  <li
-                    key={item.id ?? i}
-                    onClick={() => loadSpecificConversation(item.id)}
-                    className={`px-3 py-2 rounded-xl cursor-pointer transition truncate text-gray-700
+                  return (
+                    <li
+                      key={item.id ?? i}
+                      onClick={() => loadSpecificConversation(item.id)}
+                      className={`px-3 py-2 rounded-xl cursor-pointer transition truncate text-gray-700
         ${
           isActive
             ? "bg-[rgb(61,40,223)]/20 text-[rgb(61,40,223)]"
             : "hover:bg-gray-100"
         }
         `}
-                  >
-                    {item.title}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-
-        <div className="border-t py-4 px-6 text-left">
-          {/* User Info */}
-          <div className="flex items-center gap-2 mb-3 mt-1.5">
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
-              <User className="w-5 h-5 text-white/90" />
+                    >
+                      {item.title}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-            <span className="text-sm font-medium text-gray-700">John Doe</span>
           </div>
 
-          {/* Settings Button */}
-          <button
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-[rgb(61,40,223)] mt-1 w-full text-left p-2 rounded-lg hover:bg-gray-100"
-            aria-label="Settings"
-          >
-            <Settings className="w-4 h-4" />
-            Settings
-          </button>
-        </div>
-      </aside>
+          <div className="border-t py-4 px-6 text-left">
+            {/* User Info */}
+            <div className="flex items-center gap-2 mb-3 mt-1.5">
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-r from-gray-300 to-gray-200">
+                <User className="w-5 h-5 text-white/90" />
+              </div>
+              <span className="text-sm font-medium text-gray-700">
+                John Doe
+              </span>
+            </div>
 
-      {/* Main content */}
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          Sidebar ? "md:ml-64" : "ml-0"
-        }`}
-      >
-        {/* Header */}
-        <header className="flex justify-between items-center pb-4 px-6 pt-3 border-b bg-white sticky top-0 z-20">
-          <div className="flex items-center gap-4">
+            {/* Settings Button */}
             <button
-              onClick={() => {
-                if (window.innerWidth < 768) {
-                  setMobileOpen(true);
-                } else {
-                  setSidebar((s) => !s);
-                }
-              }}
-              className="cursor-pointer p-2 rounded-md hover:bg-gray-100"
-              aria-label="Toggle sidebar"
+              className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-[rgb(61,40,223)] mt-1 w-full text-left p-2 rounded-lg hover:bg-gray-100"
+              aria-label="Settings"
             >
-              <Menu className="w-6 h-6 text-gray-500" />
+              <Settings className="w-4 h-4" />
+              Settings
             </button>
-            <h2 className="text-[17px] font-semibold text-gray-900">{topic}</h2>
           </div>
+        </aside>
 
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-2">
-              <Link
-                href="/"
-                className="text-gray-700 text-sm font-medium hover:text-[rgb(61,40,223)]"
-              >
-                Home
-              </Link>
-              <span className="text-gray-300">|</span>
+        {/* Main content */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+            Sidebar ? "md:ml-64" : "ml-0"
+          }`}
+        >
+          {/* Header */}
+          <header className="flex justify-between items-center pb-4 px-6 pt-3 border-b bg-white sticky top-0 z-20">
+            <div className="flex items-center gap-4">
               <button
-                onClick={generate_assessment}
-                className="text-[rgb(61,40,223)] cursor-pointer px-4 py-2 rounded-4xl border border-[rgb(61,40,223)] text-sm font-medium hover:text-white hover:bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]"
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    setMobileOpen(true);
+                  } else {
+                    setSidebar((s) => !s);
+                  }
+                }}
+                className="cursor-pointer p-2 rounded-md hover:bg-gray-100"
+                aria-label="Toggle sidebar"
               >
-                Generate Assessment
+                <Menu className="w-6 h-6 text-gray-500" />
               </button>
-              <span className="text-gray-300">|</span>
+              <h2 className="text-[17px] font-semibold text-gray-900">
+                {topic}
+              </h2>
             </div>
-            <Globe className="w-5 h-5 text-gray-600 cursor-pointer hover:text-[rgb(61,40,223)]" />
-            <Moon className="w-5 h-5 text-gray-600 cursor-pointer hover:text-yellow-500" />
-          </div>
-        </header>
 
-        {/* Chat Messages */}
-          <div 
-            ref={chatScrollRef} 
+            <div className="flex items-center gap-5">
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/"
+                  className="text-gray-700 text-sm font-medium hover:text-[rgb(61,40,223)]"
+                >
+                  Home
+                </Link>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={generate_assessment}
+                  className="text-[rgb(61,40,223)] cursor-pointer px-4 py-2 rounded-4xl border border-[rgb(61,40,223)] text-sm font-medium hover:text-white hover:bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)]"
+                >
+                  Generate Assessment
+                </button>
+                <span className="text-gray-300">|</span>
+              </div>
+              <Globe className="w-5 h-5 text-gray-600 cursor-pointer hover:text-[rgb(61,40,223)]" />
+              <Moon className="w-5 h-5 text-gray-600 cursor-pointer hover:text-yellow-500" />
+            </div>
+          </header>
+
+          {/* Chat Messages */}
+          <div
+            ref={chatScrollRef}
             className="h-[calc(100vh-140px)] overflow-y-auto py-6 px-4"
           >
-          <div className="w-full max-w-screen-md mx-auto px-4">
-            {CurrentMsg?.length ? (
-              CurrentMsg.map((msg, index) => (
-                <MessageBubble key={index} msg={msg} index={index} />
-              ))
-            ) : (
+            <div className="w-full max-w-screen-md mx-auto px-4">
+              {CurrentMsg?.length ? (
+                CurrentMsg.map((msg, index) => (
+                  <MessageBubble key={index} msg={msg} index={index} />
+                ))
+              ) : (
                 <div className="relative flex justify-center">
                   <Brain
                     className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse"
@@ -449,56 +465,60 @@ const ChatPage = () => {
                   />
                   <div className="absolute inset-0 -m-4 rounded-full bg-[rgb(61,40,223)/.1] animate-ping" />
                 </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Input */}
-        <div className="border-t bg-white p-4 sticky bottom-0">
-          <div className="w-full max-w-screen-md mx-auto px-4">
-            <div className="flex items-center w-full bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Describe what’s wrong or ask about a symptom..."
-                className="flex-1 bg-transparent focus:outline-none px-2 text-gray-800 placeholder-gray-400 text-sm"
-                aria-label="Message input"
-              />
-              <Mic
+          {/* Input */}
+          <div className="border-t bg-white p-4 sticky bottom-0">
+            <div className="w-full max-w-screen-md mx-auto px-4">
+              <div className="flex items-center w-full bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Describe what’s wrong or ask about a symptom..."
+                  className="flex-1 bg-transparent focus:outline-none px-2 text-gray-800 placeholder-gray-400 text-sm"
+                  aria-label="Message input"
+                />
+                {/* <Mic
                 className="w-5 h-5 text-gray-500 cursor-pointer mr-3"
                 aria-hidden
-              />
-              <button
-                onClick={handleSend}
-                className="bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white rounded-full p-2.5 hover:opacity-90 transition"
-                aria-label="Send message"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
+              /> */}
+                <button
+                  onClick={handleSend}
+                  disabled={send}
+                  className={`bg-gradient-to-r cursor-pointer from-[rgb(61,40,223)] to-[rgb(103,18,232)] text-white rounded-full p-2.5 hover:opacity-90 transition flex items-center justify-center ${
+                    send ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+                  aria-label="Send message"
+                >
+                  {send ? (
+                    <div className="size-4 border border-white rounded-full border-b-transparent animate-spin"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
 
-            <p className="text-center text-[11px] text-gray-500 mt-3">
-              Disclaimer: Careverse Assistant is for informational purposes only
-              and is not a substitute for professional medical advice.
-            </p>
+              <p className="text-center text-[11px] text-gray-500 mt-3">
+                Disclaimer: Careverse Assistant is for informational purposes
+                only and is not a substitute for professional medical advice.
+              </p>
+            </div>
           </div>
         </div>
+        {popup && (
+          <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-[999]">
+            <span>{popup}</span>
+            <button onClick={() => setPopup("")} className="font-bold ml-2">
+              ×
+            </button>
+          </div>
+        )}
       </div>
-      {popup && (
-  <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-[999]">
-    <span>{popup}</span>
-    <button
-      onClick={() => setPopup("")}
-      className="font-bold ml-2"
-    >
-      ×
-    </button>
-  </div>
-)}
-
-    </div>
+    </>
   );
 };
 

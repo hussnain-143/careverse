@@ -176,9 +176,9 @@ export default function LoginPage() {
                   />
                   Remember me
                 </label>
-                <a className="text-[rgb(55,0,231)] hover:underline font-medium">
+                {/* <a className="text-[rgb(55,0,231)] hover:underline font-medium">
                   Forgot Password?
-                </a>
+                </a> */}
               </div>
 
               {/* Submit button using the new component */}

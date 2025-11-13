@@ -76,10 +76,10 @@ const Header = () => {
     <header className="fixed inset-x-0 top-0 bg-white border-b border-gray-100 shadow-sm z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer">
+        <Link href="/" className="flex items-center gap-2 cursor-pointer">
           <div className="w-5 h-5 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-md" />
           <h1 className="font-semibold text-lg text-gray-900">Careverse</h1>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-8">
           {/* Desktop Nav */}
@@ -95,7 +95,7 @@ const Header = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="text-gray-500 hover:text-[rgb(61,40,223)] transition flex items-center gap-1"
+                className="text-gray-500 cursor-pointer hover:text-[rgb(61,40,223)] transition flex items-center gap-1"
               >
                 My Assessments
                 <svg
@@ -208,7 +208,7 @@ const Header = () => {
                   ) : (
                     <ul className="max-h-60 overflow-y-auto">
                       {assessments.map((a) => {
-                        const title = a.possibleCondition
+                        const title = a.possibleCondition;
                         return (
                           <li key={a.id}>
                             <Link
@@ -266,11 +266,10 @@ export default function AssessmentResults() {
 
   // redirect back if no data
   useEffect(() => {
-
     if (!data) {
       router.push("/chat");
     }
-        const getLocation = async () => {
+    const getLocation = async () => {
       const token =
         localStorage.getItem("authToken") ||
         sessionStorage.getItem("authToken");
@@ -286,16 +285,14 @@ export default function AssessmentResults() {
           }
         );
         const loc = await res.json();
-        
-         // <-- your line
+        // <-- your line
         const { location } = loc.data;
         setLoc(location ?? []);
         // <-- your line
-       
       } catch (err) {
         console.error("getLocation error:", err);
       }
-    }
+    };
 
     getLocation();
   }, [data]);
@@ -464,7 +461,7 @@ export default function AssessmentResults() {
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`
-              relative pb-3 transition-all duration-200
+              relative pb-3 transition-all duration-200 cursor-pointer
               ${
                 isActive
                   ? "text-[rgb(61,40,223)] font-semibold"
@@ -493,11 +490,15 @@ export default function AssessmentResults() {
             </div>
 
             {/* Location */}
-            <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-gray-500" />
-              My Location:{" "}
-              <span className="font-medium">{loc.city}, {loc.countryCode}</span>
-            </p>
+            {loc?.city && loc?.countryCode && (
+              <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-gray-500" />
+                My Location:{" "}
+                <span className="font-medium">
+                  {loc.city}, {loc.countryCode}
+                </span>
+              </p>
+            )}
           </div>
 
           {/* Tab Content */}
@@ -545,12 +546,11 @@ export default function AssessmentResults() {
             <section className="max-w-6xl mx-auto mb-12 sm:mb-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-2xl overflow-hidden shadow-xl border lg:h-150 border-gray-200">
-                <img
-                  src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=11&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
-                  alt="Map"
-                  className="w-full h-64 sm:h-80 lg:h-full object-cover"
-                />
-
+                  <img
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=11&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
+                    alt="Map"
+                    className="w-full h-64 sm:h-80 lg:h-full object-cover"
+                  />
                 </div>
                 <div className="flex flex-col gap-4">
                   {providers.map((doc) => (
@@ -563,7 +563,7 @@ export default function AssessmentResults() {
                           initials={doc.initials || getInitials(doc.name)}
                         />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-800">
+                          <h4 className="font-semibold w-60 text-gray-800">
                             {doc.name}
                           </h4>
                           <p className="text-sm text-gray-600">
@@ -576,14 +576,23 @@ export default function AssessmentResults() {
                           <p>{doc.rating}</p>
                         </div>
                       </div>
-                      <Link
-                        href={doc?.bookingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
-                      >
-                        Book Appointment
-                      </Link>
+                      {doc?.bookingUrl ? (
+                        <Link
+                          href={doc.bookingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full sm:w-auto bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
+                        >
+                          Book Appointment
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full sm:w-auto bg-gray-300 text-white px-5 py-2.5 rounded-full text-sm font-semibold cursor-not-allowed"
+                        >
+                          No Booking Available
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
