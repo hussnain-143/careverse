@@ -50,8 +50,6 @@ async function loginAction(prevState, formData) {
       return { success: false, errors: formatted };
     }
 
-    console.log(data.data);
-
     const { token, refreshToken , user } = data.data;
 
     if (user){

@@ -63,7 +63,6 @@ export default function AssessmentById() {
       try {
         const result = await apiClient.get(`/api/v1/assessments/${assessmentId}`);
         setValue(result?.data?.assessment);
-        console.log("Assessment data:", result?.data?.assessment);
       } catch (err) {
         console.error("loadAssessment error:", err);
       }

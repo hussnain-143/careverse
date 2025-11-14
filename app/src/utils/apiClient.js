@@ -53,12 +53,27 @@ class ApiClient {
     // If already refreshing, queue this request
     if (this.isRefreshing) {
       return new Promise((resolve, reject) => {
-        this.failedRequests.push({ resolve, reject });
+        this.failedRequests.push({ resolve, reject, url: originalUrl, config: originalConfig });
       }).then(async () => {
+        // Wait for refresh to complete and retry with new token
         const { token: newToken } = TokenManager.getTokens();
-        originalConfig.headers.Authorization = `Bearer ${newToken}`;
-        const retryResponse = await fetch(`${this.baseURL}${originalUrl}`, originalConfig);
-        if (!retryResponse.ok) throw new Error(`Retry failed: ${retryResponse.status}`);
+        if (!newToken) {
+          throw new Error('Token refresh completed but no new token available');
+        }
+        
+        // Create a fresh config copy to avoid body consumption issues
+        const retryConfig = {
+          ...originalConfig,
+          headers: {
+            ...originalConfig.headers,
+            Authorization: `Bearer ${newToken}`,
+          },
+        };
+        
+        const retryResponse = await fetch(`${this.baseURL}${originalUrl}`, retryConfig);
+        if (!retryResponse.ok) {
+          throw new Error(`Retry failed: ${retryResponse.status}`);
+        }
         return retryResponse.json();
       });
     }
@@ -71,18 +86,35 @@ class ApiClient {
       const newToken = await this.refreshPromise;
       this.refreshPromise = null;
 
-      // Retry original request
-      originalConfig.headers.Authorization = `Bearer ${newToken}`;
-      const retryResponse = await fetch(`${this.baseURL}${originalUrl}`, originalConfig);
-      if (!retryResponse.ok) throw new Error(`Retry failed: ${retryResponse.status}`);
+      if (!newToken) {
+        throw new Error('Token refresh completed but no new token available');
+      }
 
-      // Resolve all waiting requests
+      // Create a fresh config copy to avoid body consumption issues
+      const retryConfig = {
+        ...originalConfig,
+        headers: {
+          ...originalConfig.headers,
+          Authorization: `Bearer ${newToken}`,
+        },
+      };
+
+      // Retry original request
+      const retryResponse = await fetch(`${this.baseURL}${originalUrl}`, retryConfig);
+      if (!retryResponse.ok) {
+        throw new Error(`Retry failed: ${retryResponse.status}`);
+      }
+
+      const retryResult = await retryResponse.json();
+
+      // Only resolve all waiting requests AFTER successful retry
       this.failedRequests.forEach(({ resolve }) => resolve());
       this.failedRequests = [];
 
-      return retryResponse.json();
+      return retryResult;
     } catch (error) {
       console.error('Token refresh failed:', error);
+      // Reject all waiting requests
       this.failedRequests.forEach(({ reject }) => reject(error));
       this.failedRequests = [];
 
@@ -102,22 +134,46 @@ class ApiClient {
   async refreshToken() {
     const { refreshToken, rememberMe } = TokenManager.getTokens();
 
-    if (!refreshToken) throw new Error('No refresh token available');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
 
-    const response = await fetch(`${this.baseURL}/api/v1/auth/refresh-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-    if (!response.ok) throw new Error('Token refresh failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Token refresh failed: ${response.status} - ${errorText}`);
+      }
 
-    const data = await response.json();
-    // ✅ Adjust according to your backend response keys
-    const { token: newToken, refreshToken: newRefreshToken } = data.data;
+      const data = await response.json();
+      
+      // Handle different response structures (data.data, data, or direct properties)
+      let newToken, newRefreshToken;
+      if (data.data) {
+        newToken = data.data.token || data.data.accessToken;
+        newRefreshToken = data.data.refreshToken;
+      } else if (data.token || data.accessToken) {
+        newToken = data.token || data.accessToken;
+        newRefreshToken = data.refreshToken;
+      } else {
+        throw new Error('Invalid token refresh response structure');
+      }
 
-    TokenManager.setTokens(newToken, newRefreshToken, rememberMe);
-    return newToken;
+      if (!newToken || !newRefreshToken) {
+        throw new Error('Token refresh response missing required tokens');
+      }
+
+      TokenManager.setTokens(newToken, newRefreshToken, rememberMe);
+      return newToken;
+    } catch (error) {
+      console.error('Refresh token error:', error);
+      throw error;
+    }
   }
 
   // --------------------------
