@@ -63,7 +63,6 @@ export default function AssessmentById() {
       try {
         const result = await apiClient.get(`/api/v1/assessments/${assessmentId}`);
         setValue(result?.data?.assessment);
-        console.log("Assessment data:", result?.data?.assessment);
       } catch (err) {
         console.error("loadAssessment error:", err);
       }
@@ -129,7 +128,56 @@ export default function AssessmentById() {
         {/* Assessment Result Card */}
         <section className="bg-white rounded-2xl shadow-xl max-w-6xl mx-auto p-6 sm:p-8 mb-10 sm:mb-12">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
-            <div className="bg-[rgb(231,225,253)] w-full lg:max-w-[350px] h-48 lg:h-auto rounded-2xl flex-shrink-0" />
+                        {/* Placeholder Image */}
+                        <div className="bg-[rgb(231,225,253)] w-full lg:max-w-[350px] h-48 lg:h-auto rounded-2xl flex-shrink-0 flex items-center justify-center">
+                          {severity === "emergency" && (
+                            <AlertTriangle
+                              className="size-50 text-red-600 animate-pulse transition-transform duration-300 ease-in-out"
+                              style={{ filter: "drop-shadow(0 0 10px #f87171)" }}
+                            />
+                          )}
+                          {severity === "high" && (
+                            <AlertCircle
+                              className="size-50 text-orange-500 animate-bounce"
+                              style={{ filter: "drop-shadow(0 0 10px #fb923c)" }}
+                            />
+                          )}
+                          {severity === "medium" && (
+                            <Info
+                              className="size-50 text-yellow-400 animate-pulse"
+                              style={{ filter: "drop-shadow(0 0 8px #fde68a)" }}
+                            />
+                          )}
+                          {severity === "low" && (
+                            <CheckCircle
+                              className="size-50 text-green-500 animate-success-spin"
+                              style={{ filter: "drop-shadow(0 0 8px #6ee7b7)" }}
+                            />
+                          )}
+                          {/* Custom animation for success */}
+                          <style jsx>{`
+                            @keyframes success-spin {
+                              0% {
+                                transform: scale(1) rotate(0deg);
+                              }
+                              20% {
+                                transform: scale(1.1) rotate(-10deg);
+                              }
+                              40% {
+                                transform: scale(1.15) rotate(10deg);
+                              }
+                              60% {
+                                transform: scale(1.1) rotate(0deg);
+                              }
+                              100% {
+                                transform: scale(1) rotate(0deg);
+                              }
+                            }
+                            .animate-success-spin {
+                              animation: success-spin 1.5s cubic-bezier(0.65, 0, 0.35, 1) 1;
+                            }
+                          `}</style>
+                        </div>
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
                 <div>
@@ -143,7 +191,7 @@ export default function AssessmentById() {
                     <span
                       className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${severityColor[severity]}`}
                     >
-                      ⚠️ {severity.toUpperCase()}
+                      {severity.toUpperCase()}
                     </span>
                   )}
                 </div>

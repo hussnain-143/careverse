@@ -35,7 +35,7 @@ export const TokenManager = {
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('refreshToken');
     localStorage.removeItem('rememberMe');
-    localStorage.removeItem("userEmail")
+    localStorage.removeItem('userEmail');
   },
 
   // Check if tokens exist
