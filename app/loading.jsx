@@ -1,36 +1,13 @@
-// app/loading.jsx
-import { Brain } from "lucide-react";
-
-export default function Loading() {
+export default function Loading({ message }) {
   return (
-    <div className="fixed inset-0 bg-[rgb(246,244,255)] flex flex-col items-center justify-center min-h-screen px-4 z-50">
-      {/* Logo + Name */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-xl" />
-        <h1 className="text-2xl font-bold text-gray-900">Careverse</h1>
+    <div className="fixed inset-0 bg-gradient-to-br from-[rgb(120,195,235)] via-[rgb(150,177,225)] to-[rgb(180,159,216)] flex flex-col items-center justify-center min-h-screen z-50">
+      <div className="relative w-12 h-12 mb-4">
+        <div className="absolute inset-0 rounded-full border-4 border-[rgb(55,0,231)]/20"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[rgb(55,0,231)] border-r-[rgb(75,20,255)] animate-spin"></div>
       </div>
-
-      {/* Animated Brain + Ripple */}
-      <div className="relative">
-        <Brain
-          className="w-16 h-16 text-[rgb(61,40,223)] animate-pulse"
-          strokeWidth={2}
-        />
-        <div className="absolute inset-0 -m-4 rounded-full bg-[rgb(61,40,223)/.1] animate-ping" />
-      </div>
-
-      {/* Text */}
-      <p className="mt-6 text-lg font-medium text-gray-700">
-        Loading...
-      </p>
-      <p className="text-sm text-gray-500 mt-1">
-        Please wait a moment.
-      </p>
-
-      {/* Animated Progress Bar */}
-      <div className="mt-8 w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-full animate-loading-bar" />
-      </div>
+      {message && (
+        <p className="text-sm font-semibold text-gray-900 mt-4">{message}</p>
+      )}
     </div>
   );
 }

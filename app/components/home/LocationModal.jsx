@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { MapPin, X } from "lucide-react";
-import { apiClient } from "../../src/utils/apiClient"; // adjust path if needed
+import { apiClient } from "../../src/utils/apiClient";
 
 export default function LocationModal() {
   const [show, setShow] = useState(false);
@@ -22,7 +22,6 @@ export default function LocationModal() {
       const lon = position.coords.longitude;
 
       try {
-        // Reverse geocode
         const geoRes = await fetch(
           `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=${process.env.NEXT_PUBLIC_GEOCODE_KEY}`
         );
@@ -38,11 +37,9 @@ export default function LocationModal() {
           countryCode: comp["ISO_3166-1_alpha-2"] || "",
         };
 
-        // Save locally
         localStorage.setItem("userLocation", JSON.stringify(finalData));
         setShow(false);
 
-        // Send to backend if user logged in
         const token =
           localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
@@ -59,27 +56,30 @@ export default function LocationModal() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex justify-center items-center z-50 px-4 animate-fade-in">
+      <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md p-8 text-center animate-scale-in border border-white/50">
         {/* Close */}
         <button
           onClick={() => setShow(false)}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-all duration-200 p-1.5 hover:bg-gray-100 rounded-full"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Icon */}
-        <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 bg-[rgb(55,0,231)]/10 text-[rgb(55,0,231)] rounded-full flex items-center justify-center">
-            <MapPin className="w-6 h-6" />
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <div className="w-16 h-16 bg-gradient-to-br from-[rgb(55,0,231)] to-[rgb(75,20,255)] rounded-2xl flex items-center justify-center shadow-lg">
+              <MapPin className="w-8 h-8 text-white" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-[rgb(55,0,231)] to-[rgb(75,20,255)] rounded-2xl opacity-0 blur-xl animate-pulse"></div>
           </div>
         </div>
 
-        <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">
+        <h2 className="text-2xl font-bold mb-3 text-gray-900">
           Enable Location Services
         </h2>
-        <p className="text-gray-600 mb-6 text-sm sm:text-base">
+        <p className="text-gray-600 mb-8 text-base leading-relaxed">
           To find the best local providers and services for you, Careverse needs
           to know your location.
         </p>
@@ -87,9 +87,15 @@ export default function LocationModal() {
         <div className="space-y-3">
           <button
             onClick={handleAllow}
-            className="w-full bg-[rgb(55,0,231)] hover:bg-[rgb(75,20,255)] text-white font-semibold py-3 rounded-full transition"
+            className="w-full bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] hover:from-[rgb(75,20,255)] hover:to-[rgb(55,0,231)] text-white font-semibold py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
           >
             Allow Location Access
+          </button>
+          <button
+            onClick={() => setShow(false)}
+            className="w-full text-gray-600 hover:text-gray-800 font-medium py-2.5 transition-colors duration-200"
+          >
+            Maybe later
           </button>
         </div>
       </div>

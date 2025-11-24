@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapPin,
   Star,
@@ -16,18 +16,30 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Loading from "../../loading";
-import { apiClient } from "../../src/utils/apiClient"; // <-- import apiClient
+import { apiClient } from "../../src/utils/apiClient";
 
-/* ────────────────────── Minimal Header ────────────────────── */
+/* ────────────────────── Header ────────────────────── */
 const Header = () => (
-  <header className="fixed inset-x-0 top-0 bg-white border-b border-gray-100 shadow-sm z-50">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center">
+  <header className="sticky top-0 z-50 w-full bg-transparent backdrop-blur-xl border-b border-white/40 flex-shrink-0">
+    <div className="max-w-7xl mx-auto flex justify-between items-center pb-4 px-6 sm:px-8 pt-6">
       <div className="flex items-center gap-4">
-        <Link href="/chat" className="p-2 rounded-lg hover:bg-gray-100">
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        <Link 
+          href="/chat" 
+          className="p-2 rounded-lg hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(55,0,231)] focus:ring-offset-2"
+          aria-label="Go back to chat"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-800" />
         </Link>
-        <Link href="/" className="font-semibold text-lg text-gray-900">
-          Careverse
+        <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+          <div className="relative">
+            <div className="w-10 h-10 bg-gradient-to-br from-[rgb(55,0,231)] to-[rgb(75,20,255)] rounded-xl shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-br from-[rgb(55,0,231)] to-[rgb(75,20,255)] rounded-xl opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300"></div>
+          </div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent group-hover:from-[rgb(55,0,231)] group-hover:to-[rgb(75,20,255)] transition-all duration-300">
+            Careverse
+          </h1>
         </Link>
       </div>
     </div>
@@ -36,11 +48,12 @@ const Header = () => (
 
 /* ────────────────────── Provider Avatar ────────────────────── */
 const ProviderAvatar = ({ initials }) => (
-  <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 shadow-inner overflow-hidden flex-shrink-0">
+  <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-[rgb(55,0,231)]/20 to-[rgb(75,20,255)]/20 border border-white/60 shadow-lg overflow-hidden flex-shrink-0">
+    <div className="absolute inset-0 bg-gradient-to-br from-[rgb(55,0,231)]/10 to-[rgb(75,20,255)]/10 rounded-full opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
     <img
       src={`https://placehold.co/100x100/A0BFFF/3D28E8/png?text=${initials}`}
       alt="avatar"
-      className="w-full h-full object-cover p-1"
+      className="w-full h-full object-cover p-1 relative z-10"
       onError={(e) => {
         e.currentTarget.src =
           "https://placehold.co/100x100/A0BFFF/3D28E8/png?text=D";
@@ -55,33 +68,42 @@ export default function AssessmentById() {
   const [value, setValue] = useState();
   const [loc, setLoc] = useState([]);
   const [activeTab, setActiveTab] = useState("Overview");
+  const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
-    const loadAssessment = async () => {
-      if (!assessmentId) return;
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+
+    const loadData = async () => {
+      if (!assessmentId) {
+        setLoading(false);
+        return;
+      }
 
       try {
+        setLoading(true);
         const result = await apiClient.get(`/api/v1/assessments/${assessmentId}`);
         setValue(result?.data?.assessment);
+        
+        apiClient.get("/api/v1/users/location")
+          .then((locResp) => {
+            setLoc(locResp?.data?.location ?? []);
+          })
+          .catch((err) => {
+            console.error("getLocation error:", err);
+          });
       } catch (err) {
         console.error("loadAssessment error:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    const getLocation = async () => {
-      try {
-        const locResp = await apiClient.get("/api/v1/users/location");
-        setLoc(locResp?.data?.location ?? []);
-      } catch (err) {
-        console.error("getLocation error:", err);
-      }
-    };
-
-    loadAssessment();
-    getLocation();
+    loadData();
   }, [assessmentId]);
 
-  if (!value) return <Loading />;
+  if (loading || !value) return <Loading message="Loading assessment..." />;
 
   // Extract data
   const { possibleCondition, disclaimer, severity, warnings, nextSteps, providers, products } = value;
@@ -91,9 +113,9 @@ export default function AssessmentById() {
   const initialSelfCare = possibleCondition?.initialSelfCare;
 
   const iconMap = {
-    emergency: <AlertTriangle className="w-6 h-6 text-[rgb(61,40,223)]" />,
-    doctor: <Stethoscope className="w-6 h-6 text-[rgb(61,40,223)]" />,
-    info: <Info className="w-6 h-6 text-[rgb(61,40,223)]" />,
+    emergency: <AlertTriangle className="w-6 h-6 text-[rgb(55,0,231)]" />,
+    doctor: <Stethoscope className="w-6 h-6 text-[rgb(55,0,231)]" />,
+    info: <Info className="w-6 h-6 text-[rgb(55,0,231)]" />,
   };
 
   const severityColor = {
@@ -112,154 +134,216 @@ export default function AssessmentById() {
       .slice(0, 2);
 
   return (
-    <div className="flex flex-col min-h-screen pt-16 text-black">
+    <div className="flex flex-col min-h-screen text-gray-800 relative bg-gradient-to-br from-[rgb(120,195,235)] via-[rgb(150,177,225)] to-[rgb(180,159,216)]">
       <Header />
 
-      <main className="flex-1 bg-[rgb(246,244,255)] px-4 sm:px-6 lg:px-10 py-8 sm:py-12">
-        <div className="max-w-6xl mx-auto text-left mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-2">
+      <main className="flex-1 px-4 sm:px-6 lg:px-10 py-8 sm:py-12 relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-[rgb(55,0,231)]/15 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-[rgb(75,20,255)]/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[rgb(120,195,235)]/25 rounded-full blur-3xl"></div>
+          
+          <div className="absolute top-40 right-20 w-64 h-64 bg-[rgb(55,0,231)]/8 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-40 left-20 w-56 h-56 bg-[rgb(75,20,255)]/8 rounded-full blur-2xl"></div>
+          
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
+        </div>
+
+        <div className="max-w-6xl mx-auto text-left mb-8 sm:mb-12 relative z-10 animate-fade-in-up">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-2 bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] bg-clip-text text-transparent">
             Your Assessment Results
           </h1>
-          <p className="text-gray-700 text-sm sm:text-base">
+          <p className="text-gray-800 text-sm sm:text-base font-medium">
             Based on the symptoms you described.
           </p>
         </div>
 
         {/* Assessment Result Card */}
-        <section className="bg-white rounded-2xl shadow-xl max-w-6xl mx-auto p-6 sm:p-8 mb-10 sm:mb-12">
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
-                        {/* Placeholder Image */}
-                        <div className="bg-[rgb(231,225,253)] w-full lg:max-w-[350px] h-48 lg:h-auto rounded-2xl flex-shrink-0 flex items-center justify-center">
-                          {severity === "emergency" && (
-                            <AlertTriangle
-                              className="size-50 text-red-600 animate-pulse transition-transform duration-300 ease-in-out"
-                              style={{ filter: "drop-shadow(0 0 10px #f87171)" }}
-                            />
-                          )}
-                          {severity === "high" && (
-                            <AlertCircle
-                              className="size-50 text-orange-500 animate-bounce"
-                              style={{ filter: "drop-shadow(0 0 10px #fb923c)" }}
-                            />
-                          )}
-                          {severity === "medium" && (
-                            <Info
-                              className="size-50 text-yellow-400 animate-pulse"
-                              style={{ filter: "drop-shadow(0 0 8px #fde68a)" }}
-                            />
-                          )}
-                          {severity === "low" && (
-                            <CheckCircle
-                              className="size-50 text-green-500 animate-success-spin"
-                              style={{ filter: "drop-shadow(0 0 8px #6ee7b7)" }}
-                            />
-                          )}
-                          {/* Custom animation for success */}
-                          <style jsx>{`
-                            @keyframes success-spin {
-                              0% {
-                                transform: scale(1) rotate(0deg);
-                              }
-                              20% {
-                                transform: scale(1.1) rotate(-10deg);
-                              }
-                              40% {
-                                transform: scale(1.15) rotate(10deg);
-                              }
-                              60% {
-                                transform: scale(1.1) rotate(0deg);
-                              }
-                              100% {
-                                transform: scale(1) rotate(0deg);
-                              }
-                            }
-                            .animate-success-spin {
-                              animation: success-spin 1.5s cubic-bezier(0.65, 0, 0.35, 1) 1;
-                            }
-                          `}</style>
+        <section className="max-w-6xl mx-auto mb-10 sm:mb-12 relative z-10 animate-fade-in-up delay-100">
+          <div className="relative">
+            {/* Main Card */}
+            <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+              {/* Top Gradient Accent */}
+              <div className="h-2 bg-gradient-to-r from-[rgb(55,0,231)] via-[rgb(75,20,255)] to-[rgb(55,0,231)]"></div>
+              
+              <div className="p-8 sm:p-10">
+                {/* Header Section */}
+                <div className="flex items-start justify-between mb-8">
+                  <div className="flex-1">
+                    {/* Title Section with Icon */}
+                    <div className="relative">
+                      {/* Background accent */}
+                      <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-[rgb(55,0,231)] to-[rgb(75,20,255)] rounded-full"></div>
+                      
+                      <div className="pl-6">
+                        {/* Label */}
+                        <div className="mb-3">
+                          <div className="inline-flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[rgb(55,0,231)]"></div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-[rgb(55,0,231)]">
+                              Assessment Result
+                            </p>
+                          </div>
                         </div>
-            <div className="flex-1">
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
-                <div>
-                  <p className="font-semibold text-sm mb-1 text-[rgb(61,40,223)]">
-                    Possible Condition
+                        
+                        {/* Title with Icon */}
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="p-3 rounded-xl bg-gradient-to-br from-[rgb(55,0,231)]/15 to-[rgb(75,20,255)]/15 border border-[rgb(55,0,231)]/25 shadow-md">
+                            <Brain className="w-6 h-6 text-[rgb(55,0,231)]" />
+                          </div>
+                          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
+                            {conditionName}
+                          </h2>
+                        </div>
+                        
+                        {/* Severity Badge */}
+                        {severity && (
+                          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase shadow-sm ${severityColor[severity]}`}>
+                            {severity === "emergency" && <AlertTriangle className="w-4 h-4" />}
+                            {severity === "high" && <AlertCircle className="w-4 h-4" />}
+                            {severity === "medium" && <Info className="w-4 h-4" />}
+                            {severity === "low" && <CheckCircle className="w-4 h-4" />}
+                            {severity} Severity
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right Icon Display */}
+                  <div className="hidden lg:flex flex-shrink-0 ml-8 items-center justify-center">
+                    <div className="relative">
+                      {severity === "emergency" && (
+                        <AlertTriangle className="w-28 h-28 text-red-500 drop-shadow-2xl animate-pulse" style={{ filter: "drop-shadow(0 0 20px rgba(239, 68, 68, 0.6))" }} />
+                      )}
+                      {severity === "high" && (
+                        <AlertCircle className="w-28 h-28 text-orange-500 drop-shadow-2xl animate-bounce" style={{ filter: "drop-shadow(0 0 20px rgba(249, 115, 22, 0.6))" }} />
+                      )}
+                      {severity === "medium" && (
+                        <Info className="w-28 h-28 text-yellow-500 drop-shadow-2xl animate-pulse" style={{ filter: "drop-shadow(0 0 20px rgba(234, 179, 8, 0.6))" }} />
+                      )}
+                      {severity === "low" && (
+                        <CheckCircle className="w-28 h-28 text-green-500 drop-shadow-2xl" style={{ filter: "drop-shadow(0 0 20px rgba(34, 197, 94, 0.6))", animation: "float 3s ease-in-out infinite" }} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-[rgb(55,0,231)]/5 to-[rgb(75,20,255)]/5 border border-[rgb(55,0,231)]/10">
+                  <p className="text-gray-800 text-base sm:text-lg leading-relaxed">
+                    {conditionDesc}
                   </p>
-                  <h2 className="text-2xl sm:text-3xl font-bold">
-                    {conditionName}
-                  </h2>
-                  {severity && (
-                    <span
-                      className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${severityColor[severity]}`}
-                    >
-                      {severity.toUpperCase()}
-                    </span>
-                  )}
                 </div>
-                <div className="p-3 rounded-full bg-[rgb(231,225,253)] self-start sm:self-auto">
-                  <Brain className="w-6 h-6 sm:w-7 sm:h-7 text-[rgb(61,40,223)]" />
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/60 hover:border-[rgb(55,0,231)]/30 transition-all duration-300 hover:shadow-lg group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-[rgb(55,0,231)]/15 to-[rgb(75,20,255)]/15 group-hover:from-[rgb(55,0,231)]/25 group-hover:to-[rgb(75,20,255)]/25 transition-all duration-300">
+                        <AlertCircle className="w-5 h-5 text-[rgb(55,0,231)]" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-lg">
+                        Common Triggers
+                      </h3>
+                    </div>
+                    <p className="text-gray-700 text-sm leading-relaxed pl-14">
+                      {triggers?.join(", ")}
+                    </p>
+                  </div>
+                  
+                  <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/60 hover:border-[rgb(55,0,231)]/30 transition-all duration-300 hover:shadow-lg group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-[rgb(55,0,231)]/15 to-[rgb(75,20,255)]/15 group-hover:from-[rgb(55,0,231)]/25 group-hover:to-[rgb(75,20,255)]/25 transition-all duration-300">
+                        <CheckCircle className="w-5 h-5 text-[rgb(55,0,231)]" />
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-lg">
+                        Initial Self-Care
+                      </h3>
+                    </div>
+                    <p className="text-gray-700 text-sm leading-relaxed pl-14">
+                      {initialSelfCare?.join(", ")}
+                    </p>
+                  </div>
                 </div>
+
+                {/* Disclaimer */}
+                {disclaimer && (
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-amber-50/90 to-amber-50/70 backdrop-blur-sm border-2 border-amber-300/40 shadow-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-xl bg-amber-100/80 flex-shrink-0">
+                        <Info className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-amber-900 mb-2 text-lg">
+                          Disclaimer
+                        </p>
+                        <p className="text-sm text-amber-800 leading-relaxed">
+                          {disclaimer}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <p className="text-gray-700 mb-6 leading-relaxed text-sm sm:text-base">
-                {conditionDesc}
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 sm:pt-6 border-t border-gray-100">
-                <div>
-                  <h3 className="font-semibold mb-1 text-gray-800 text-sm sm:text-base">
-                    Common Triggers
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {triggers?.join(", ")}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1 text-gray-800 text-sm sm:text-base">
-                    Initial Self-Care
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {initialSelfCare?.join(", ")}
-                  </p>
-                </div>
-              </div>
-
-              {disclaimer && (
-                <div className="mt-6 p-3 rounded-xl text-xs sm:text-sm bg-[rgb(231,225,253)]">
-                  <p className="text-gray-600">
-                    <span className="font-semibold mr-1 text-[rgb(61,40,223)]">
-                      Disclaimer:
-                    </span>
-                    {disclaimer}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </section>
 
         {/* Suggested Next Steps */}
-        <section className="max-w-6xl mx-auto mb-10 sm:mb-12">
-          <h3 className="font-bold text-xl sm:text-2xl mb-6 text-gray-800">
-            Suggested Next Steps
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <section className="max-w-6xl mx-auto mb-10 sm:mb-12 relative z-10 animate-fade-in-up delay-200">
+          {/* Section Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-[rgb(55,0,231)]/30 to-transparent"></div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 whitespace-nowrap">
+                Suggested Next Steps
+              </h3>
+              <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-[rgb(55,0,231)]/30 to-transparent"></div>
+            </div>
+            <p className="text-center text-sm text-gray-600">
+              Recommended actions based on your assessment
+            </p>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {(nextSteps ?? []).map((item, i) => {
               const icon = iconMap[item.icon] || (
-                <Info className="w-6 h-6 text-[rgb(61,40,223)]" />
+                <Info className="w-6 h-6 text-[rgb(55,0,231)]" />
               );
               return (
                 <div
                   key={i}
                   onClick={() => item.url && window.open(item.url, "_blank")}
-                  className="bg-white p-5 sm:p-6 rounded-2xl shadow-lg border border-gray-100 flex flex-col items-start hover:shadow-xl transition cursor-pointer"
+                  className="group relative bg-white/90 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden"
                 >
-                  <div className="mb-4 p-3 rounded-full bg-[rgb(61,40,223)/.1]">
-                    {icon}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[rgb(55,0,231)]/5 to-[rgb(75,20,255)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[rgb(55,0,231)] via-[rgb(75,20,255)] to-[rgb(55,0,231)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-[rgb(55,0,231)]/15 to-[rgb(75,20,255)]/15 border border-[rgb(55,0,231)]/20 group-hover:from-[rgb(55,0,231)]/25 group-hover:to-[rgb(75,20,255)]/25 group-hover:border-[rgb(55,0,231)]/30 transition-all duration-300 w-fit">
+                      {icon}
+                    </div>
+                    
+                    <h4 className="font-bold mb-2 text-lg text-gray-900 group-hover:text-[rgb(55,0,231)] transition-colors duration-300">
+                      {item.title}
+                    </h4>
+                    
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {item.description}
+                    </p>
+                    
+                    {item.url && (
+                      <div className="mt-4 flex items-center gap-2 text-[rgb(55,0,231)] text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span>Learn more</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                  <h4 className="font-semibold mb-1 text-base sm:text-lg">
-                    {item.title}
-                  </h4>
-                  <p className="text-sm text-gray-600">{item.description}</p>
                 </div>
               );
             })}
@@ -267,71 +351,87 @@ export default function AssessmentById() {
         </section>
 
         {/* Providers & Map */}
-        <section className="max-w-6xl mx-auto mb-12 sm:mb-16">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-gray-200">
-            <div className="flex flex-wrap gap-8 text-sm sm:text-base font-medium">
+        <section className="max-w-6xl mx-auto mb-12 sm:mb-16 relative z-10 animate-fade-in-up delay-300">
+          {/* Tab Navigation */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div className="flex gap-2 bg-white/60 backdrop-blur-sm p-1.5 rounded-xl border border-white/60 shadow-lg">
               {["Overview", "Providers", "Products"].map((tab) => {
                 const isActive = activeTab === tab;
                 return (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`relative pb-3 transition-all cursor-pointer duration-200 ${
-                      isActive
-                        ? "text-[rgb(61,40,223)] font-semibold"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`
+                      relative px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 cursor-pointer
+                      ${
+                        isActive
+                          ? "bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] text-white shadow-md scale-105"
+                          : "text-gray-700 hover:text-[rgb(55,0,231)] hover:bg-white/40 active:scale-95"
+                      }
+                    `}
                   >
                     {tab}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgb(61,40,223)] rounded-full" />
-                    )}
                   </button>
                 );
               })}
             </div>
+
+            {/* Location  */}
             {loc?.city && loc?.countryCode && (
-              <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-gray-500" />
-                My Location:{" "}
-                <span className="font-medium">
-                  {loc.city}, {loc.countryCode}
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-white/60">
+                <MapPin className="w-4 h-4 text-[rgb(55,0,231)]" />
+                <span className="text-xs sm:text-sm text-gray-700">
+                  <span className="font-medium">My Location: </span>
+                  <span className="font-semibold text-[rgb(55,0,231)]">
+                    {loc.city}, {loc.countryCode}
+                  </span>
                 </span>
-              </p>
+              </div>
             )}
           </div>
 
-          {/* OVERVIEW TAB */}
+          {/* OVERVIEW TAB  */}
           {activeTab === "Overview" && (
-            <section className="mt-8">
+            <section className="mt-8 animate-fade-in-up">
               {(warnings || []).length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {warnings.map((w, i) => (
                     <div
                       key={i}
-                      className="bg-red-50 border border-red-200 text-red-800 p-5 rounded-2xl flex items-start gap-3 shadow-sm"
+                      className="bg-white/90 backdrop-blur-xl border-l-4 border-red-500 rounded-r-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300"
                     >
-                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="font-semibold text-red-900">
-                          {w.message}
-                        </p>
-                        {w.action && (
-                          <p className="text-sm mt-1.5 font-medium text-red-700">
-                            Action: {w.action}
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-lg bg-red-100 flex-shrink-0">
+                          <AlertCircle className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-gray-900 mb-2">
+                            {w.message}
                           </p>
-                        )}
+                          {w.action && (
+                            <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-100">
+                              <p className="text-sm font-semibold text-red-800 mb-1">
+                                Recommended Action:
+                              </p>
+                              <p className="text-sm text-red-700">
+                                {w.action}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-8 text-center">
-                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
-                  <p className="text-lg font-medium text-gray-800">
+                <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-10 text-center shadow-lg border border-white/60">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 mb-2">
                     All systems operational
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600">
                     No warnings or alerts at this time.
                   </p>
                 </div>
@@ -339,57 +439,62 @@ export default function AssessmentById() {
             </section>
           )}
 
-          {/* PROVIDERS TAB */}
+          {/* PROVIDERS TAB  */}
           {activeTab === "Providers" && (
-            <section className="max-w-6xl mx-auto mb-12 sm:mb-16">
+            <section className="mt-8 animate-fade-in-up">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="rounded-2xl overflow-hidden shadow-xl border lg:h-150 border-gray-200">
+                {/* Map */}
+                <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/60 h-64 sm:h-72 lg:h-80">
                   <img
-                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=13&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
+                    src={`https://maps.googleapis.com/maps/api/staticmap?center=${loc.city},${loc.countryCode}&zoom=11&size=600x400&markers=color:red|${loc.city},${loc.countryCode}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`}
                     alt="Map"
-                    className="w-full h-64 sm:h-80 lg:h-full object-cover"
+                    className="w-full h-full object-cover block"
                   />
                 </div>
+                
+                {/* Providers List */}
                 <div className="flex flex-col gap-4">
                   {(providers || []).map((doc) => (
                     <div
                       key={doc.placeId || doc.name}
-                      className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:shadow-xl transition-shadow duration-300"
+                      className="bg-white/90 backdrop-blur-xl p-5 rounded-2xl shadow-lg border border-white/60 hover:shadow-2xl hover:border-[rgb(55,0,231)]/40 transition-all duration-300 group"
                     >
-                      <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <div className="flex items-center gap-4">
                         <ProviderAvatar
                           initials={doc.initials || getInitials(doc.name)}
                         />
-                        <div className="flex-1">
-                          <h4 className="font-semibold w-60 text-gray-800">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 mb-1">
                             {doc.name}
                           </h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 mb-1">
                             {doc.specialty} · {doc.distance}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                            {doc.rating} ({doc.reviewCount} reviews)
-                          </p>
+                            <span className="text-xs text-gray-600">
+                              {doc.rating} ({doc.reviewCount} reviews)
+                            </span>
+                          </div>
                         </div>
+                        {doc?.bookingUrl ? (
+                          <Link
+                            href={doc.bookingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] hover:from-[rgb(75,20,255)] hover:to-[rgb(55,0,231)] text-white px-5 py-2 rounded-full text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 whitespace-nowrap"
+                          >
+                            Book
+                          </Link>
+                        ) : (
+                          <button
+                            disabled
+                            className="bg-gray-200 text-gray-500 px-5 py-2 rounded-full text-sm font-semibold cursor-not-allowed whitespace-nowrap"
+                          >
+                            Unavailable
+                          </button>
+                        )}
                       </div>
-                      {doc?.bookingUrl ? (
-                        <Link
-                          href={doc.bookingUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full sm:w-auto bg-[rgb(61,40,223)] hover:bg-[rgb(103,18,232)] text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-colors"
-                        >
-                          Book Appointment
-                        </Link>
-                      ) : (
-                        <button
-                          disabled
-                          className="w-full sm:w-auto bg-gray-300 text-white px-5 py-2.5 rounded-full text-sm font-semibold cursor-not-allowed"
-                        >
-                          No Booking Available
-                        </button>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -397,57 +502,76 @@ export default function AssessmentById() {
             </section>
           )}
 
-          {/* PRODUCTS TAB */}
+          {/* PRODUCTS TAB  */}
           {activeTab === "Products" && (
-            <section className="mt-8">
+            <section className="mt-8 animate-fade-in-up">
               {(products || []).length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((p, i) => (
                     <div
                       key={i}
-                      className="group bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-xl hover:border-[rgb(61,40,223)] transition-all duration-300 cursor-pointer"
+                      className="group relative bg-white/90 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 p-6 hover:shadow-2xl hover:border-[rgb(55,0,231)]/40 transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
                     >
-                      <div className="bg-gradient-to-br from-[rgb(61,40,223)] to-[rgb(103,18,232)] rounded-xl w-12 h-12 flex items-center justify-center mb-4 text-white">
-                        <Package className="w-6 h-6" />
+                      {/* Top accent line */}
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[rgb(55,0,231)] via-[rgb(75,20,255)] to-[rgb(55,0,231)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-[rgb(55,0,231)]/5 to-[rgb(75,20,255)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      {/* Icon */}
+                      <div className="relative z-10 bg-gradient-to-br from-[rgb(55,0,231)] to-[rgb(75,20,255)] rounded-xl w-14 h-14 flex items-center justify-center mb-4 text-white shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <Package className="w-7 h-7" />
                       </div>
-                      <h4 className="font-bold text-xl text-gray-900">
+
+                      {/* Product Name & Type */}
+                      <h4 className="relative z-10 font-bold text-lg text-gray-900 group-hover:text-[rgb(55,0,231)] transition-colors duration-300 mb-1">
                         {p.name}
                       </h4>
-                      <p className="text-sm font-medium text-[rgb(61,40,223)] mt-1">
+                      <p className="relative z-10 text-xs font-semibold text-[rgb(55,0,231)] uppercase tracking-wide mb-3">
                         {p.type}
                       </p>
-                      <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+
+                      {/* Description */}
+                      <p className="relative z-10 text-sm text-gray-700 leading-relaxed mb-4">
                         {p.description}
                       </p>
-                      <div className="flex gap-2 mt-3">
+
+                      {/* Prescription / Consultation Tags */}
+                      <div className="relative z-10 flex flex-wrap gap-2 mb-4">
                         {p.isPrescription ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                             Prescription Required
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
                             Over the Counter
                           </span>
                         )}
                         {p.requiresConsultation && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             Consultation Suggested
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 mt-4 italic">
-                        {p.disclaimer}
-                      </p>
-                      <div className="mt-5 pt-4 border-t border-gray-100">
+
+                      {/* Disclaimer */}
+                      {p.disclaimer && (
+                        <p className="relative z-10 text-xs text-gray-500 italic mb-4">
+                          {p.disclaimer}
+                        </p>
+                      )}
+
+                      {/* CTA Button */}
+                      <div className="relative z-10 mt-5 pt-4 border-t border-gray-100">
                         <Link
                           href={p.purchaseUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm font-medium text-[rgb(61,40,223)] group-hover:underline"
+                          className="inline-flex items-center text-sm font-semibold text-[rgb(55,0,231)] group-hover:text-[rgb(75,20,255)] transition-colors duration-300"
                         >
-                          Buy
+                          Buy Now
                           <svg
-                            className="ml-1 w-4 h-4 transition-transform group-hover:translate-x-1"
+                            className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -465,12 +589,14 @@ export default function AssessmentById() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-10 text-center">
-                  <Package className="w-14 h-14 text-gray-400 mx-auto mb-3" />
-                  <p className="text-lg font-medium text-gray-700">
+                <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-10 text-center shadow-lg border border-white/60">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Package className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <p className="text-lg font-bold text-gray-900 mb-2">
                     No products available
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-600">
                     Check back later for updates.
                   </p>
                 </div>
