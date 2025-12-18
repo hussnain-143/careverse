@@ -8,7 +8,11 @@ export default function LocationModal() {
 
   useEffect(() => {
     const saved = localStorage.getItem("userLocation");
-    if (!saved) setShow(true);
+    if (!saved) {
+      // Defer state update to avoid synchronous setState-in-effect lint rule
+      const t = setTimeout(() => setShow(true), 0);
+      return () => clearTimeout(t);
+    }
   }, []);
 
   const handleAllow = () => {
