@@ -1,26 +1,22 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { TokenManager } from "../../src/utils/tokenUtils";
 
 const HomeHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [token, setToken] = useState(null);
-  const [mounted, setMounted] = useState(false);
+  const [token, setToken] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return TokenManager.getTokens()?.token || null;
+  });
 
   const handleLogout = () => {
     TokenManager.clearTokens();
     setIsOpen(false);
+    setToken(null);
     window.location.href = "/login";
   };
-
-  // Update token check
-  useEffect(() => {
-    setMounted(true);
-    const { token } = TokenManager.getTokens();
-    setToken(token);
-  }, []);
 
   return (
     <header

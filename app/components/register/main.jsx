@@ -120,7 +120,7 @@ function RegisterSubmitButton() {
 // --- Main Page Component ---
 export default function RegisterPage() {
   const router = useRouter();
-  const [toast, setToast] = useState(null);
+  const [dismissedToastKey, setDismissedToastKey] = useState(null);
 
   const [state, formAction] = useActionState(registerAction, {
     success: null,
@@ -128,28 +128,28 @@ export default function RegisterPage() {
     message: "",
   });
 
-  // Show toast notifications
-  useEffect(() => {
-    if (state.success && state.message) {
-      setToast({ message: state.message, type: "success" });
-      setTimeout(() => router.push("/login"), 1500);
-    } else if (state.errors?.api) {
-      setToast({ message: state.errors.api, type: "error" });
-    }
-  }, [state, router]);
+  const toastToShow =
+    state.success && state.message
+      ? { key: `success:${state.message}`, message: state.message, type: "success" }
+      : state.errors?.api
+        ? { key: `error:${state.errors.api}`, message: state.errors.api, type: "error" }
+        : null;
 
-  const closeToast = () => {
-    setToast(null);
-  };
+  // Redirect after successful register
+  useEffect(() => {
+    if (!state.success || !state.message) return;
+    const t = setTimeout(() => router.push("/login"), 1500);
+    return () => clearTimeout(t);
+  }, [state.success, state.message, router]);
 
   return (
     <>
       {/* Toast Notification */}
-      {toast && (
+      {toastToShow && toastToShow.key !== dismissedToastKey && (
         <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
+          message={toastToShow.message}
+          type={toastToShow.type}
+          onClose={() => setDismissedToastKey(toastToShow.key)}
         />
       )}
 
