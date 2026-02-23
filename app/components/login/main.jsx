@@ -1,5 +1,5 @@
 "use client";
-import React, { useActionState, useEffect, useState } from "react";
+import React, { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { ArrowRight } from "lucide-react";
@@ -98,6 +98,7 @@ function LoginSubmitButton() {
 export default function LoginPage() {
   const router = useRouter();
   const [toast, setToast] = useState(null);
+  const lastToastRef = useRef(null);
 
   const [state, formAction] = useActionState(loginAction, {
     success: null,
@@ -107,11 +108,19 @@ export default function LoginPage() {
 
   // Show toast notifications
   useEffect(() => {
+    const nextMessage =
+      state.success && state.message ? state.message : state.errors?.api;
+    const nextType = state.success && state.message ? "success" : "error";
+
+    if (!nextMessage) return;
+    if (lastToastRef.current === nextMessage) return;
+    lastToastRef.current = nextMessage;
+
+    // Defer state update to avoid synchronous setState-in-effect lint rule
+    setTimeout(() => setToast({ message: nextMessage, type: nextType }), 0);
+
     if (state.success && state.message) {
-      setToast({ message: state.message, type: "success" });
       setTimeout(() => router.push("/"), 1500);
-    } else if (state.errors?.api) {
-      setToast({ message: state.errors.api, type: "error" });
     }
   }, [state, router]);
 
@@ -218,7 +227,7 @@ export default function LoginPage() {
 
             <div className="mt-8 pt-6 border-t border-gray-200">
               <p className="text-center text-sm text-gray-600">
-                Don't have an account?{" "}
+                {"Don't have an account? "}
               <a
                 href="/register"
                   className="text-[rgb(55,0,231)] hover:text-[rgb(75,20,255)] font-semibold hover:underline transition-colors duration-200"

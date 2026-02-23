@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { ArrowRight, Home, Search, Compass } from "lucide-react";
+import Link from "next/link";
 
 export default function NotFoundPage() {
     return (
@@ -51,19 +52,19 @@ export default function NotFoundPage() {
 
                     {/* Message */}
                             <p className="text-gray-600 leading-relaxed text-base sm:text-lg">
-                                The page you're looking for seems to have drifted away. Let's get you back on track.
+                                The page you&apos;re looking for seems to have drifted away. Let&apos;s get you back on track.
                     </p>
 
                     {/* Button */}
                             <div className="pt-4">
-                    <a
+                    <Link
                         href="/"
                                     className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] hover:from-[rgb(75,20,255)] hover:to-[rgb(55,0,231)] text-white font-semibold py-3.5 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 group"
                     >
                                     <Home className="w-4 h-4" />
                         Go Back Home
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                                </a>
+                                </Link>
                             </div>
 
                             {/* Decorative line */}

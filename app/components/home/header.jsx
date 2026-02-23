@@ -17,9 +17,13 @@ const HomeHeader = () => {
 
   // Update token check
   useEffect(() => {
-    setMounted(true);
-    const { token } = TokenManager.getTokens();
-    setToken(token);
+    // Defer state updates to avoid synchronous setState-in-effect lint rule
+    const t = setTimeout(() => {
+      setMounted(true);
+      const { token } = TokenManager.getTokens();
+      setToken(token);
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   return (
@@ -60,7 +64,7 @@ const HomeHeader = () => {
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[rgb(55,0,231)] group-hover:w-full transition-all duration-300"></span>
         </Link>
 
-        {token ? (
+        {mounted && token ? (
           <button
             onClick={handleLogout}
               className="bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] cursor-pointer hover:from-[rgb(75,20,255)] hover:to-[rgb(55,0,231)] text-white font-semibold py-2.5 px-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
@@ -116,7 +120,7 @@ const HomeHeader = () => {
             About Us
           </Link>
 
-          {token ? (
+          {mounted && token ? (
             <button
               onClick={handleLogout}
               className="bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] hover:from-[rgb(75,20,255)] hover:to-[rgb(55,0,231)] text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl w-40"

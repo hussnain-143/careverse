@@ -1,5 +1,5 @@
 "use client";
-import React, { useActionState, useEffect, useState } from "react";
+import React, { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { ArrowRight } from "lucide-react";
@@ -121,6 +121,7 @@ function RegisterSubmitButton() {
 export default function RegisterPage() {
   const router = useRouter();
   const [toast, setToast] = useState(null);
+  const lastToastRef = useRef(null);
 
   const [state, formAction] = useActionState(registerAction, {
     success: null,
@@ -130,11 +131,19 @@ export default function RegisterPage() {
 
   // Show toast notifications
   useEffect(() => {
+    const nextMessage =
+      state.success && state.message ? state.message : state.errors?.api;
+    const nextType = state.success && state.message ? "success" : "error";
+
+    if (!nextMessage) return;
+    if (lastToastRef.current === nextMessage) return;
+    lastToastRef.current = nextMessage;
+
+    // Defer state update to avoid synchronous setState-in-effect lint rule
+    setTimeout(() => setToast({ message: nextMessage, type: nextType }), 0);
+
     if (state.success && state.message) {
-      setToast({ message: state.message, type: "success" });
       setTimeout(() => router.push("/login"), 1500);
-    } else if (state.errors?.api) {
-      setToast({ message: state.errors.api, type: "error" });
     }
   }, [state, router]);
 
