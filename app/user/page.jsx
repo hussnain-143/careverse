@@ -35,8 +35,34 @@ const DetailCard = ({ icon: Icon, label, value }) => (
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [githubUsername, setGithubUsername] = useState("");
+  const [githubUsernameDraft, setGithubUsernameDraft] = useState("");
   const router = useRouter();
   const hasLoadedRef = useRef(false);
+
+  const getInitialGithubUsername = (nextUser) => {
+    const fromUser =
+      nextUser?.githubUsername ||
+      nextUser?.github_username ||
+      nextUser?.github?.username ||
+      "";
+
+    if (fromUser) return String(fromUser).trim();
+
+    if (typeof window === "undefined") return "";
+    return (localStorage.getItem("githubUsername") || "").trim();
+  };
+
+  const saveGithubUsername = (value) => {
+    const nextValue = (value || "").trim();
+    setGithubUsername(nextValue);
+    setGithubUsernameDraft(nextValue);
+    try {
+      localStorage.setItem("githubUsername", nextValue);
+    } catch {
+      // ignore storage failures (private mode, quota, etc.)
+    }
+  };
 
   useEffect(() => {
     // Prevent double execution in StrictMode
@@ -54,7 +80,11 @@ export default function ProfilePage() {
       const storedUser = localStorage.getItem("user") || sessionStorage.getItem("user");
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          const initialGh = getInitialGithubUsername(parsedUser);
+          setGithubUsername(initialGh);
+          setGithubUsernameDraft(initialGh);
           setLoading(false);
         } catch (err) {
           console.error("Error parsing user data:", err);
@@ -62,6 +92,9 @@ export default function ProfilePage() {
         }
       } else {
         // Only show loading if no user data exists
+        const initialGh = getInitialGithubUsername(null);
+        setGithubUsername(initialGh);
+        setGithubUsernameDraft(initialGh);
         setLoading(false);
       }
     };
@@ -92,6 +125,13 @@ export default function ProfilePage() {
   const displayName = user?.firstName || user?.email || "User Profile";
   const initials = (user?.firstName?.[0] || '') + (user?.lastName?.[0] || '');
   const isActive = user?.isActive;
+  const hasGithub = Boolean(githubUsername);
+  const streakUrl = hasGithub
+    ? `https://streak-stats.demolab.com?user=${encodeURIComponent(githubUsername)}&hide_border=true`
+    : "";
+  const trophiesUrl = hasGithub
+    ? `https://github-profile-trophy.vercel.app/?username=${encodeURIComponent(githubUsername)}&no-frame=true&no-bg=true&margin-w=10&margin-h=10&row=1&column=7`
+    : "";
 
   return (
     <div className="flex flex-col min-h-screen text-gray-800 relative bg-gradient-to-br from-[rgb(120,195,235)] via-[rgb(150,177,225)] to-[rgb(180,159,216)]">
@@ -259,6 +299,82 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 )}
+
+                {/* GitHub Section */}
+                <div className="mt-10 pt-8 border-t border-gray-100">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
+                    GitHub
+                  </h3>
+                  <p className="text-gray-700 text-sm sm:text-base mb-6">
+                    Add a GitHub username to display your Streak and Trophies.
+                  </p>
+
+                  <div className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/60 shadow-lg mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="github-username">
+                      GitHub username
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        id="github-username"
+                        value={githubUsernameDraft}
+                        onChange={(e) => setGithubUsernameDraft(e.target.value)}
+                        placeholder="e.g. octocat"
+                        className="w-full sm:flex-1 px-4 py-3 rounded-xl border border-white/60 bg-white/80 focus:outline-none focus:ring-2 focus:ring-[rgb(55,0,231)] focus:border-transparent"
+                        autoComplete="off"
+                        inputMode="text"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => saveGithubUsername(githubUsernameDraft)}
+                          className="px-5 py-3 rounded-xl bg-gradient-to-r from-[rgb(55,0,231)] to-[rgb(75,20,255)] text-white font-semibold hover:opacity-95 transition-opacity"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveGithubUsername("")}
+                          className="px-5 py-3 rounded-xl bg-white/70 border border-white/60 text-gray-900 font-semibold hover:bg-white/90 transition-colors"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                    {!hasGithub && (
+                      <p className="mt-3 text-sm text-gray-600">
+                        No username set yet — enter one above to load widgets.
+                      </p>
+                    )}
+                  </div>
+
+                  {hasGithub && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/60 hover:border-[rgb(55,0,231)]/30 transition-all duration-300 hover:shadow-lg">
+                        <h4 className="font-bold text-gray-900 text-lg mb-4">GitHub Streak</h4>
+                        <div className="w-full overflow-hidden rounded-xl bg-white/60 border border-white/60">
+                          <img
+                            src={streakUrl}
+                            alt={`GitHub streak stats for ${githubUsername}`}
+                            loading="lazy"
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/60 hover:border-[rgb(55,0,231)]/30 transition-all duration-300 hover:shadow-lg">
+                        <h4 className="font-bold text-gray-900 text-lg mb-4">GitHub Trophies</h4>
+                        <div className="w-full overflow-hidden rounded-xl bg-white/60 border border-white/60">
+                          <img
+                            src={trophiesUrl}
+                            alt={`GitHub profile trophies for ${githubUsername}`}
+                            loading="lazy"
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

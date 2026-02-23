@@ -97,7 +97,7 @@ function LoginSubmitButton() {
 // --- Main Page Component ---
 export default function LoginPage() {
   const router = useRouter();
-  const [toast, setToast] = useState(null);
+  const [dismissedToastKey, setDismissedToastKey] = useState(null);
 
   const [state, formAction] = useActionState(loginAction, {
     success: null,
@@ -105,28 +105,28 @@ export default function LoginPage() {
     message: "",
   });
 
-  // Show toast notifications
-  useEffect(() => {
-    if (state.success && state.message) {
-      setToast({ message: state.message, type: "success" });
-      setTimeout(() => router.push("/"), 1500);
-    } else if (state.errors?.api) {
-      setToast({ message: state.errors.api, type: "error" });
-    }
-  }, [state, router]);
+  const toastToShow =
+    state.success && state.message
+      ? { key: `success:${state.message}`, message: state.message, type: "success" }
+      : state.errors?.api
+        ? { key: `error:${state.errors.api}`, message: state.errors.api, type: "error" }
+        : null;
 
-  const closeToast = () => {
-    setToast(null);
-  };
+  // Redirect after successful login
+  useEffect(() => {
+    if (!state.success || !state.message) return;
+    const t = setTimeout(() => router.push("/"), 1500);
+    return () => clearTimeout(t);
+  }, [state.success, state.message, router]);
 
   return (
     <>
       {/* Toast Notification */}
-      {toast && (
+      {toastToShow && toastToShow.key !== dismissedToastKey && (
         <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={closeToast}
+          message={toastToShow.message}
+          type={toastToShow.type}
+          onClose={() => setDismissedToastKey(toastToShow.key)}
         />
       )}
 
@@ -218,7 +218,7 @@ export default function LoginPage() {
 
             <div className="mt-8 pt-6 border-t border-gray-200">
               <p className="text-center text-sm text-gray-600">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
               <a
                 href="/register"
                   className="text-[rgb(55,0,231)] hover:text-[rgb(75,20,255)] font-semibold hover:underline transition-colors duration-200"

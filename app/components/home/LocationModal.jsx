@@ -1,15 +1,13 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MapPin, X } from "lucide-react";
 import { apiClient } from "../../src/utils/apiClient";
 
 export default function LocationModal() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("userLocation");
-    if (!saved) setShow(true);
-  }, []);
+  const [show, setShow] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("userLocation");
+  });
 
   const handleAllow = () => {
     if (!navigator.geolocation) {
